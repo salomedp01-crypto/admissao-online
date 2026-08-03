@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#C00000">
+<title>Admissões — Painel RH</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js"></script>
+<style>
+  :root {
+    --primary: #C00000;
+    --primary-dark: #8B0000;
+    --gray-100: #F5F5F5;
+    --gray-200: #E7E6E6;
+    --gray-300: #D0D0D0;
+    --gray-500: #808080;
+    --gray-700: #4A4A4A;
+    --gray-900: #1A1A1A;
+    --success: #2E7D32;
+    --warn: #F57C00;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--gray-100); color: var(--gray-900); font-size: 15px; line-height: 1.5; }
+
+  header.app-header { background: var(--primary); color: white; padding: 16px 20px; }
+  header .inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  header h1 { margin: 0; font-size: 20px; font-weight: 700; }
+  header .subtitle { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+
+  .container { max-width: 1100px; margin: 20px auto; padding: 0 16px 40px; }
+
+  /* KPIs */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .kpi { background: white; padding: 16px; border-radius: 8px; border-left: 4px solid var(--primary); }
+  .kpi .n { font-size: 24px; font-weight: 700; color: var(--primary); }
+  .kpi .l { font-size: 12px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .kpi.warn { border-left-color: var(--warn); } .kpi.warn .n { color: var(--warn); }
+  .kpi.success { border-left-color: var(--success); } .kpi.success .n { color: var(--success); }
+
+  /* toolbar */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .btn { padding: 10px 18px; font-size: 14px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; font-family: inherit; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-secondary { background: white; color: var(--gray-700); border: 1.5px solid var(--gray-300); }
+  .btn-icon { padding: 8px 12px; }
+  .filter-group { display: flex; gap: 6px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+  .filter-group select { padding: 8px 12px; border: 1.5px solid var(--gray-300); border-radius: 6px; font-family: inherit; font-size: 14px; background: white; }
+  .filter-group input { padding: 8px 12px; border: 1.5px solid var(--gray-300); border-radius: 6px; font-family: inherit; font-size: 14px; }
+
+  /* table */
+  .table-wrapper { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; background: var(--gray-100); padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--gray-500); letter-spacing: 0.5px; border-bottom: 2px solid var(--gray-200); }
+  td { padding: 12px 16px; border-bottom: 1px solid var(--gray-200); font-size: 14px; }
+  tr:hover td { background: var(--gray-100); cursor: pointer; }
+  tr.empty td { text-align: center; padding: 40px; color: var(--gray-500); }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .badge.pendente { background: #E3F2FD; color: #1565C0; }
+  .badge.rascunho { background: #FFF8E1; color: var(--warn); }
+  .badge.enviada { background: #E8F5E9; color: var(--success); }
+  .badge.empresa-agas { background: #FCE4EC; color: var(--primary); }
+  .badge.empresa-eugas { background: #E1F5FE; color: #0277BD; }
+  .badge.empresa-outra { background: #F3E5F5; color: #7B1FA2; }
+
+  /* modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: white; border-radius: 12px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; }
+  .modal-header h2 { margin: 0; font-size: 18px; }
+  .modal-close { background: none; border: none; font-size: 24px; color: var(--gray-500); cursor: pointer; line-height: 1; padding: 0 4px; }
+  .modal-body { padding: 20px; }
+  .modal-footer { padding: 12px 20px; border-top: 1px solid var(--gray-200); display: flex; gap: 8px; justify-content: flex-end; }
+  .modal.wide { max-width: 800px; }
+
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 6px; }
+  .field input, .field select { width: 100%; padding: 10px 12px; font-size: 15px; border: 1.5px solid var(--gray-300); border-radius: 6px; font-family: inherit; }
+
+  .link-box { background: var(--gray-100); border: 1.5px dashed var(--gray-300); border-radius: 6px; padding: 12px; margin: 12px 0; word-break: break-all; font-family: 'SF Mono', Monaco, monospace; font-size: 13px; color: var(--gray-700); }
+  .link-actions { display: flex; gap: 8px; }
+  .link-actions .btn { flex: 1; }
+
+  /* detail modal - sections */
+  .detail-empresa-badge { padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-weight: 600; }
+  .detail-empresa-badge.agas { background: #FCE4EC; color: var(--primary); }
+  .detail-empresa-badge.eugas { background: #E1F5FE; color: #0277BD; }
+  .detail-section { margin-bottom: 16px; }
+  .detail-section h3 { margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid var(--primary); color: var(--primary); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 4px 12px; font-size: 14px; }
+  .detail-grid .k { color: var(--gray-500); padding: 4px 0; }
+  .detail-grid .v { padding: 4px 0; font-weight: 500; word-break: break-word; }
+  .sig-preview { border: 1.5px solid var(--gray-300); border-radius: 6px; background: white; padding: 8px; margin-top: 8px; }
+  .sig-preview img { max-width: 100%; display: block; }
+
+  .config-warning { background: #FFF3E0; border-left: 4px solid var(--warn); padding: 12px 16px; margin-bottom: 20px; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .config-warning strong { display: block; color: var(--warn); margin-bottom: 4px; }
+
+  /* loader */
+  .loader-inline { text-align: center; padding: 40px; color: var(--gray-500); }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="inner">
+    <div>
+      <h1>Admissões — Painel RH</h1>
+      <div class="subtitle">Agás Gases &amp; Eugas Comércio de Gases</div>
+    </div>
+    <button class="btn btn-secondary" id="btn-nova">＋ Nova ficha</button>
+  </div>
+</header>
+
+<div class="container">
+  <div id="config-warning-box"></div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="n" id="kpi-total">0</div><div class="l">Total de fichas</div></div>
+    <div class="kpi warn"><div class="n" id="kpi-pendente">0</div><div class="l">Pendentes (link enviado)</div></div>
+    <div class="kpi warn"><div class="n" id="kpi-rascunho">0</div><div class="l">Rascunhos</div></div>
+    <div class="kpi success"><div class="n" id="kpi-enviada">0</div><div class="l">Enviadas</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-group">
+      <input type="search" id="filter-search" placeholder="Buscar por nome…">
+      <select id="filter-empresa">
+        <option value="">Todas as empresas</option>
+        <option value="agas">Agás</option>
+        <option value="eugas">Eugas</option>
+        <option value="outra">Outra</option>
+      </select>
+      <select id="filter-status">
+        <option value="">Todos os status</option>
+        <option value="pendente">Pendente</option>
+        <option value="rascunho">Rascunho</option>
+        <option value="enviada">Enviada</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Candidato</th>
+          <th>Criado em</th>
+          <th>Última atualização</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="fichas-tbody">
+        <tr class="empty"><td colspan="6"><div class="loader-inline">Carregando…</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Nova Ficha ═══ -->
+<div class="modal-overlay" id="modal-nova">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Nova ficha de admissão</h2>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Empresa *</label>
+        <select id="nova-empresa">
+          <option value="agas">AGÁS GASES LTDA</option>
+          <option value="eugas">EUGAS COMÉRCIO DE GASES EIRELI</option>
+          <option value="outra">Outra empresa (em branco)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Nome do candidato (opcional)</label>
+        <input type="text" id="nova-nome" placeholder="Ajuda a identificar depois">
+      </div>
+      <div class="field">
+        <label>Telefone / WhatsApp do candidato (opcional)</label>
+        <input type="tel" id="nova-tel" placeholder="(37) 90000-0000">
+      </div>
+      <div id="nova-link-container" style="display:none">
+        <hr style="border:none;border-top:1px solid var(--gray-200);margin:20px 0">
+        <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:var(--success)">✓ Link gerado! Envie para o candidato:</p>
+        <div class="link-box" id="nova-link"></div>
+        <div class="link-actions">
+          <button class="btn btn-secondary" id="btn-copy">📋 Copiar link</button>
+          <a class="btn btn-secondary" id="btn-whats" target="_blank">💬 Abrir WhatsApp</a>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close>Fechar</button>
+      <button class="btn btn-primary" id="btn-gerar">Gerar link</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Detalhe da Ficha ═══ -->
+<div class="modal-overlay" id="modal-detalhe">
+  <div class="modal wide">
+    <div class="modal-header">
+      <h2>Detalhes da ficha</h2>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <div class="modal-body" id="detalhe-body">
+      <div class="loader-inline">Carregando…</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" id="btn-baixar-pdf" style="display:none">📥 Baixar PDF preenchido</button>
+      <button class="btn btn-secondary" id="btn-copiar-link">📋 Copiar link do candidato</button>
+      <button class="btn btn-secondary" data-close>Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Dados da Empresa (antes de gerar PDF) ═══ -->
+<div class="modal-overlay" id="modal-empresa">
+  <div class="modal">
+    <div class="modal-header" style="background: var(--primary); color: white;">
+      <h2 style="color:white">📋 Dados da Admissão (uso da empresa)</h2>
+      <button class="modal-close" data-close style="color:white">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--gray-500);margin-top:0">Preencha os dados antes de gerar o PDF. Esses campos serão salvos junto à ficha.</p>
+
+      <div class="field">
+        <label>Data de admissão *</label>
+        <input type="date" id="emp-dataAdmissao">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field">
+          <label>Cargo / Função *</label>
+          <input type="text" id="emp-cargo" placeholder="Conforme ASO">
+        </div>
+        <div class="field">
+          <label>Setor / Departamento</label>
+          <input type="text" id="emp-departamento">
+        </div>
+      </div>
+      <div class="field">
+        <label>Salário base (R$) *</label>
+        <input type="text" id="emp-salario" placeholder="Ex: 1.760,25">
+      </div>
+      <div class="field">
+        <label>Horário de trabalho *</label>
+        <input type="text" id="emp-horario" placeholder="Ex: SEG a SEX 12:00 às 21:48 com 1:00 de intervalo">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field">
+          <label>Periculosidade?</label>
+          <div style="display:flex;gap:12px;margin-top:6px">
+            <label style="font-size:14px"><input type="radio" name="emp-pericul" value="Não" id="emp-periculNao" style="margin-right:4px" checked> Não</label>
+            <label style="font-size:14px"><input type="radio" name="emp-pericul" value="Sim" id="emp-periculSim" style="margin-right:4px"> Sim</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Insalubridade?</label>
+          <div style="display:flex;gap:12px;margin-top:6px">
+            <label style="font-size:14px"><input type="radio" name="emp-insalub" value="Não" id="emp-insalubNao" style="margin-right:4px" checked> Não</label>
+            <label style="font-size:14px"><input type="radio" name="emp-insalub" value="Sim" id="emp-insalubSim" style="margin-right:4px"> Sim</label>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field">
+          <label>Superior imediato</label>
+          <input type="text" id="emp-superior">
+        </div>
+        <div class="field">
+          <label>Local de trabalho</label>
+          <input type="text" id="emp-local" placeholder="Ex: Sede — Av. São João, 4613">
+        </div>
+      </div>
+
+      <div style="background:var(--gray-100);border-radius:6px;padding:14px;margin:16px 0">
+        <label style="font-weight:700;font-size:13px;color:var(--gray-700);display:block;margin-bottom:10px">Descontos</label>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:14px"><input type="checkbox" id="emp-descVT" style="margin-right:6px"> Vale-transporte</label>
+          <label style="font-size:14px"><input type="checkbox" id="emp-descOutro1Check" style="margin-right:6px"> Outro: <input type="text" id="emp-descOutro1" style="width:180px;padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px;font-size:14px"></label>
+        </div>
+      </div>
+
+      <div style="background:var(--gray-100);border-radius:6px;padding:14px;margin:16px 0">
+        <label style="font-weight:700;font-size:13px;color:var(--gray-700);display:block;margin-bottom:10px">Proventos</label>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:14px"><input type="checkbox" id="emp-provNoturno" style="margin-right:6px"> Adicional noturno</label>
+          <label style="font-size:14px"><input type="checkbox" id="emp-provOutro1Check" style="margin-right:6px"> Outro: <input type="text" id="emp-provOutro1" style="width:180px;padding:4px 8px;border:1px solid var(--gray-300);border-radius:4px;font-size:14px"></label>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin:16px 0">
+        <label style="font-weight:600;font-size:14px">Contrato de experiência?</label>
+        <div style="display:flex;gap:12px;align-items:center">
+          <label style="font-size:14px"><input type="radio" name="emp-exp" value="Sim" id="emp-expSim" style="margin-right:4px" checked> Sim</label>
+          <label style="font-size:14px"><input type="radio" name="emp-exp" value="Não" id="emp-expNao" style="margin-right:4px"> Não</label>
+          <span style="font-size:13px;color:var(--gray-500)">Dias:</span>
+          <select id="emp-expDias" style="padding:6px 10px;border:1px solid var(--gray-300);border-radius:4px;font-size:14px">
+            <option value="45">45</option>
+            <option value="30">30</option>
+            <option value="60">60</option>
+            <option value="45 ou 90">45 ou 90</option>
+            <option value="30 ou 60">30 ou 60</option>
+            <option value="90">90</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Outras informações</label>
+        <textarea id="emp-outras" rows="3" style="width:100%;padding:10px;border:1.5px solid var(--gray-300);border-radius:6px;font-family:inherit;font-size:14px" placeholder="Observações adicionais..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-gerar-pdf-final">📥 Gerar PDF completo</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  // ═══════════════════════════════════════════════════════════════════
+  //  CONFIGURAÇÃO — Ana Paula, MESMOS dados que você colocou no index.html
+  // ═══════════════════════════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyB2fpZIidz41B3vrDoZy3K79vs31Uhw4C4",
+    authDomain: "admissao-agas-eugas.firebaseapp.com",
+    projectId: "admissao-agas-eugas",
+    storageBucket: "admissao-agas-eugas.firebasestorage.app",
+    messagingSenderId: "407216149561",
+    appId: "1:407216149561:web:71454d4744c22a76dc69e8"
+  };
+  const USE_FIREBASE = !!firebaseConfig.projectId;
+
+  const EMPRESAS = {
+    agas: {
+      nome: "AGÁS GASES LTDA",
+      label: "Agás",
+      cnpj: "04.680.175/0001-48",
+      endereco: "Av. São João, 3462 — Centro",
+      cep: "35680-065",
+      cidadeUF: "Itaúna/MG"
+    },
+    eugas: {
+      nome: "EUGAS COMÉRCIO DE GASES EIRELI",
+      label: "Eugas",
+      cnpj: "38.300.933/0001-77",
+      endereco: "Av. São João, 4613 — Lourdes",
+      cep: "35680-237",
+      cidadeUF: "Itaúna/MG"
+    },
+    outra: {
+      nome: "(Empresa não definida)",
+      label: "Outra",
+      cnpj: "",
+      endereco: "",
+      cep: "",
+      cidadeUF: ""
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  Firebase (dinâmico)
+  // ═══════════════════════════════════════════════════════════════════
+  let db = null, fs = null;
+  if (USE_FIREBASE) {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js");
+    fs = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js");
+    const app = initializeApp(firebaseConfig);
+    db = fs.getFirestore(app);
+  } else {
+    document.getElementById('config-warning-box').innerHTML = `
+      <div class="config-warning">
+        <strong>Firebase não configurado</strong>
+        Você precisa colocar as credenciais do seu projeto Firebase no topo do arquivo <code>admin.html</code> (e do <code>index.html</code>). Leia o <code>README.md</code> pra saber como.
+        Sem isso, o painel funciona só localmente (não sincroniza entre dispositivos).
+      </div>
+    `;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  ESTADO
+  // ═══════════════════════════════════════════════════════════════════
+  let fichas = [];
+  let currentDetail = null;
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  CARREGAR FICHAS
+  // ═══════════════════════════════════════════════════════════════════
+  async function loadFichas() {
+    if (USE_FIREBASE) {
+      try {
+        const q = fs.query(fs.collection(db, 'fichas'), fs.orderBy('criadoEm', 'desc'));
+        const snap = await fs.getDocs(q);
+        fichas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch(e) {
+        console.error('Erro ao carregar fichas:', e);
+        alert('Erro ao carregar fichas do Firestore. Veja o console.');
+      }
+    } else {
+      // Fallback: mostra fichas do localStorage (só do mesmo navegador)
+      fichas = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('ficha_')) {
+          try {
+            const data = JSON.parse(localStorage.getItem(key));
+            fichas.push({ id: key.replace('ficha_', ''), ...data });
+          } catch(e){}
+        }
+      }
+    }
+    render();
+  }
+
+  function render() {
+    // KPIs
+    document.getElementById('kpi-total').textContent = fichas.length;
+    document.getElementById('kpi-pendente').textContent = fichas.filter(f => f.statusFicha === 'pendente' || !f.statusFicha).length;
+    document.getElementById('kpi-rascunho').textContent = fichas.filter(f => f.statusFicha === 'rascunho').length;
+    document.getElementById('kpi-enviada').textContent = fichas.filter(f => f.statusFicha === 'enviada').length;
+
+    // Filtros
+    const empFilter = document.getElementById('filter-empresa').value;
+    const statusFilter = document.getElementById('filter-status').value;
+    const search = document.getElementById('filter-search').value.toLowerCase().trim();
+
+    let filtered = fichas;
+    if (empFilter) filtered = filtered.filter(f => f.empresa === empFilter);
+    if (statusFilter) filtered = filtered.filter(f => (f.statusFicha || 'pendente') === statusFilter);
+    if (search) filtered = filtered.filter(f => {
+      const nome = (f.dados?.nomeCompleto || f.candidato?.nome || '').toLowerCase();
+      return nome.includes(search);
+    });
+
+    const tbody = document.getElementById('fichas-tbody');
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr class="empty"><td colspan="6">Nenhuma ficha encontrada.<br><small>Clique em "＋ Nova ficha" no topo para começar.</small></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(f => {
+      const emp = f.empresa || 'agas';
+      const status = f.statusFicha || 'pendente';
+      const nome = f.dados?.nomeCompleto || f.candidato?.nome || '(sem nome)';
+      const criado = formatDate(f.criadoEm);
+      const atualizado = formatDate(f.atualizadoEm);
+      return `
+        <tr data-id="${f.id}">
+          <td><span class="badge empresa-${emp}">${EMPRESAS[emp]?.label || emp}</span></td>
+          <td>${escapeHtml(nome)}</td>
+          <td>${criado}</td>
+          <td>${atualizado}</td>
+          <td><span class="badge ${status}">${status}</span></td>
+          <td><button class="btn btn-secondary btn-icon" data-view="${f.id}">Ver</button></td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('[data-view]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openDetalhe(btn.dataset.view);
+      });
+    });
+    tbody.querySelectorAll('tr[data-id]').forEach(tr => {
+      tr.addEventListener('click', () => openDetalhe(tr.dataset.id));
+    });
+  }
+
+  function formatDate(ts) {
+    if (!ts) return '—';
+    let d;
+    if (typeof ts === 'string') d = new Date(ts);
+    else if (ts.toDate) d = ts.toDate(); // Firestore Timestamp
+    else if (ts.seconds) d = new Date(ts.seconds * 1000);
+    else return '—';
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  function escapeHtml(s) {
+    return (s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  NOVA FICHA
+  // ═══════════════════════════════════════════════════════════════════
+  const modalNova = document.getElementById('modal-nova');
+  document.getElementById('btn-nova').addEventListener('click', () => {
+    document.getElementById('nova-nome').value = '';
+    document.getElementById('nova-tel').value = '';
+    document.getElementById('nova-empresa').value = 'agas';
+    document.getElementById('nova-link-container').style.display = 'none';
+    document.getElementById('btn-gerar').style.display = '';
+    modalNova.classList.add('show');
+  });
+
+  document.getElementById('btn-gerar').addEventListener('click', async () => {
+    const empresa = document.getElementById('nova-empresa').value;
+    const nome = document.getElementById('nova-nome').value.trim();
+    const tel = document.getElementById('nova-tel').value.trim();
+    const id = generateId();
+
+    const payload = {
+      empresa,
+      statusFicha: 'pendente',
+      candidato: { nome, telefone: tel },
+      criadoEm: USE_FIREBASE ? fs.serverTimestamp() : new Date().toISOString(),
+      atualizadoEm: USE_FIREBASE ? fs.serverTimestamp() : new Date().toISOString()
+    };
+
+    if (USE_FIREBASE) {
+      try {
+        await fs.setDoc(fs.doc(db, 'fichas', id), payload);
+      } catch(e) {
+        console.error(e);
+        alert('Erro ao criar ficha no Firestore.');
+        return;
+      }
+    } else {
+      localStorage.setItem('ficha_' + id, JSON.stringify(payload));
+    }
+
+    // Monta link
+    const baseUrl = location.href.replace(/admin\.html.*$/, '');
+    const link = `${baseUrl}?id=${id}&empresa=${empresa}`;
+    document.getElementById('nova-link').textContent = link;
+    document.getElementById('nova-link-container').style.display = '';
+    document.getElementById('btn-gerar').style.display = 'none';
+
+    // WhatsApp
+    const msg = encodeURIComponent(`Olá${nome ? ', ' + nome : ''}! Você foi convidado(a) para preencher a ficha de admissão da ${EMPRESAS[empresa].nome}. Basta abrir o link e preencher pelo celular:\n\n${link}`);
+    const whatsUrl = tel
+      ? `https://wa.me/55${tel.replace(/\D/g, '')}?text=${msg}`
+      : `https://wa.me/?text=${msg}`;
+    document.getElementById('btn-whats').href = whatsUrl;
+
+    await loadFichas();
+  });
+
+  document.getElementById('btn-copy').addEventListener('click', () => {
+    const link = document.getElementById('nova-link').textContent;
+    navigator.clipboard.writeText(link).then(() => {
+      const btn = document.getElementById('btn-copy');
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copiado!';
+      setTimeout(() => btn.textContent = orig, 1500);
+    });
+  });
+
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  DETALHE DA FICHA
+  // ═══════════════════════════════════════════════════════════════════
+  const modalDetalhe = document.getElementById('modal-detalhe');
+  async function openDetalhe(id) {
+    modalDetalhe.classList.add('show');
+    document.getElementById('detalhe-body').innerHTML = '<div class="loader-inline">Carregando…</div>';
+    let ficha;
+    if (USE_FIREBASE) {
+      const snap = await fs.getDoc(fs.doc(db, 'fichas', id));
+      ficha = snap.exists() ? { id, ...snap.data() } : null;
+    } else {
+      const raw = localStorage.getItem('ficha_' + id);
+      ficha = raw ? { id, ...JSON.parse(raw) } : null;
+    }
+    if (!ficha) {
+      document.getElementById('detalhe-body').innerHTML = '<p>Ficha não encontrada.</p>';
+      return;
+    }
+    currentDetail = ficha;
+    renderDetalhe(ficha);
+    // Mostra botão de PDF só quando ficha está enviada
+    document.getElementById('btn-baixar-pdf').style.display = (ficha.statusFicha === 'enviada') ? '' : 'none';
+  }
+
+  function renderDetalhe(f) {
+    const emp = f.empresa || 'agas';
+    const d = f.dados || {};
+    const deps = d.dependentes || [];
+
+    const html = `
+      <div class="detail-empresa-badge ${emp}">${EMPRESAS[emp].nome} — Status: <strong>${f.statusFicha || 'pendente'}</strong></div>
+
+      ${f.candidato?.nome ? `<div class="detail-section"><h3>Cadastro inicial (RH)</h3><div class="detail-grid">
+        <div class="k">Nome informado</div><div class="v">${escapeHtml(f.candidato.nome)}</div>
+        <div class="k">Telefone</div><div class="v">${escapeHtml(f.candidato.telefone || '—')}</div>
+        <div class="k">Criado em</div><div class="v">${formatDate(f.criadoEm)}</div>
+      </div></div>` : ''}
+
+      <div class="detail-section"><h3>Dados pessoais</h3><div class="detail-grid">
+        ${detailRow('Nome completo', d.nomeCompleto)}
+        ${detailRow('Nome social', d.nomeSocial)}
+        ${detailRow('Data de nascimento', d.dataNascimento)}
+        ${detailRow('Naturalidade', d.naturalidade)}
+        ${detailRow('Nacionalidade', d.nacionalidade)}
+        ${detailRow('Sexo', d.sexo)}
+        ${detailRow('Raça/Cor', d.raca)}
+        ${detailRow('Estado civil', d.estCivil)}
+        ${detailRow('PcD', d.pcd + (d.pcdQual ? ' — ' + d.pcdQual : ''))}
+      </div></div>
+
+      <div class="detail-section"><h3>Filiação, endereço e contato</h3><div class="detail-grid">
+        ${detailRow('Nome do pai', d.nomePai)}
+        ${detailRow('Nome da mãe', d.nomeMae)}
+        ${detailRow('Endereço', d.endereco)}
+        ${detailRow('Bairro', d.bairro)}
+        ${detailRow('CEP', d.cep)}
+        ${detailRow('Cidade/UF', (d.cidade || '') + '/' + (d.uf || ''))}
+        ${detailRow('Celular', d.celular)}
+        ${detailRow('E-mail', d.email)}
+        ${detailRow('WhatsApp', d.whats + (d.whatsOutro ? ' — ' + d.whatsOutro : ''))}
+      </div></div>
+
+      <div class="detail-section"><h3>Documentação</h3><div class="detail-grid">
+        ${detailRow('CPF', d.cpf)}
+        ${detailRow('RG', d.rg + (d.rgOrgao ? ' ' + d.rgOrgao : '') + (d.rgData ? ' (' + d.rgData + ')' : ''))}
+        ${detailRow('CTPS', d.ctpsNumero + ' ' + (d.ctpsData || ''))}
+        ${detailRow('PIS/PASEP/NIT', d.pis)}
+        ${detailRow('Título eleitor', d.titulo + (d.zonaSecao ? ' — ' + d.zonaSecao : ''))}
+        ${detailRow('Reservista', d.reservista)}
+        ${detailRow('CNH', (d.cnhNumero || '') + ' ' + (d.cnhCategoria || '') + (d.cnhValidade ? ' (val. ' + d.cnhValidade + ')' : ''))}
+        ${detailRow('MOPP', d.mopp + (d.moppValidade ? ' — val. ' + d.moppValidade : ''))}
+      </div></div>
+
+      ${deps.length ? `<div class="detail-section"><h3>Dependentes (${deps.length})</h3>${
+        deps.map((dep, i) => `
+          <div style="background:white;padding:10px;border-radius:6px;margin-bottom:8px;font-size:13px;border:1px solid var(--gray-200)">
+            <strong>#${i+1} ${escapeHtml(dep.nome || '(sem nome)')}</strong> — ${escapeHtml(dep.parentesco || '')}<br>
+            <small>Nasc: ${dep.nascimento || '—'} · CPF: ${dep.cpf || '—'}</small><br>
+            <small>${dep.irrf ? '✓ IRRF ' : ''}${dep.salFam ? '✓ Sal-Fam ' : ''}${dep.saude ? '✓ Saúde' : ''}</small>
+          </div>
+        `).join('')
+      }</div>` : ''}
+
+      <div class="detail-section"><h3>Escolaridade e complementares</h3><div class="detail-grid">
+        ${detailRow('Grau de instrução', d.instrucao)}
+        ${detailRow('Curso', d.curso)}
+        ${detailRow('Instituição', d.instituicao)}
+        ${detailRow('Ano conclusão', d.anoConclusao)}
+        ${detailRow('Vale-transporte', d.vt)}
+        ${detailRow('Contato emergência', (d.emerNome || '') + ' (' + (d.emerParentesco || '') + ') ' + (d.emerTelefone || ''))}
+      </div></div>
+
+      <div class="detail-section"><h3>Saúde</h3><div class="detail-grid">
+        ${detailRow('Alergias', d.alergia + (d.alergiaQual ? ' — ' + d.alergiaQual : ''))}
+        ${detailRow('Uso contínuo medicamento', d.medcont + (d.medContQual ? ' — ' + d.medContQual : ''))}
+        ${detailRow('Restrição médica', d.restr + (d.restrQual ? ' — ' + d.restrQual : ''))}
+        ${detailRow('Acidente de trabalho anterior', d.acidente + (d.acidenteQual ? ' — ' + d.acidenteQual : ''))}
+      </div></div>
+
+      <div class="detail-section"><h3>Declaração de Etnia — Lei 14.553/2023</h3><div class="detail-grid">
+        ${detailRow('Autodeclaração', d.etnia)}
+      </div>
+      ${f.assinaturas?.etnia ? `<div class="sig-preview"><img src="${f.assinaturas.etnia}" alt="Assinatura"></div>` : '<p style="color:var(--gray-500);font-size:13px">Sem assinatura registrada.</p>'}
+      </div>
+
+      <div class="detail-section"><h3>Assinatura final</h3>
+      ${f.assinaturas?.final ? `<div class="sig-preview"><img src="${f.assinaturas.final}" alt="Assinatura"></div>` : '<p style="color:var(--gray-500);font-size:13px">Sem assinatura final registrada.</p>'}
+      </div>
+
+      ${f.statusFicha === 'enviada' ? `<div style="background:#E8F5E9;border-left:4px solid var(--success);padding:12px 16px;border-radius:0 6px 6px 0;font-size:14px;margin-top:16px">
+        <strong style="color:var(--success)">✓ Ficha enviada em ${formatDate(f.enviadoEm)}</strong><br>
+        <small>Na próxima fase do projeto, você vai poder baixar o PDF preenchido e mandar para a Contabilidade daqui mesmo.</small>
+      </div>` : ''}
+    `;
+    document.getElementById('detalhe-body').innerHTML = html;
+  }
+
+  function detailRow(k, v) {
+    v = (v == null || v === '' || v === 'undefined') ? '' : String(v).trim();
+    if (v === '/' || v === '— ') v = '';
+    return `<div class="k">${k}</div><div class="v" style="${v ? '' : 'color:var(--gray-500);font-style:italic'}">${escapeHtml(v || '(vazio)')}</div>`;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  GERAÇÃO DE PDF (padrão idêntico à ficha impressa)
+  // ═══════════════════════════════════════════════════════════════════
+  const modalEmpresa = document.getElementById('modal-empresa');
+
+  document.getElementById('btn-baixar-pdf').addEventListener('click', () => {
+    if (!currentDetail) return;
+    // Preenche o modal com dados já salvos (se houver)
+    const de = currentDetail.dadosEmpresa || {};
+    document.getElementById('emp-dataAdmissao').value = de.dataAdmissao || '';
+    document.getElementById('emp-cargo').value = de.cargo || '';
+    document.getElementById('emp-departamento').value = de.departamento || '';
+    document.getElementById('emp-salario').value = de.salario || '';
+    document.getElementById('emp-horario').value = de.horario || '';
+    const periculRadio = document.querySelector(`input[name="emp-pericul"][value="${de.periculosidade || 'Não'}"]`);
+    if (periculRadio) periculRadio.checked = true;
+    const insalubRadio = document.querySelector(`input[name="emp-insalub"][value="${de.insalubridade || 'Não'}"]`);
+    if (insalubRadio) insalubRadio.checked = true;
+    document.getElementById('emp-superior').value = de.superior || '';
+    document.getElementById('emp-local').value = de.local || '';
+    document.getElementById('emp-descVT').checked = de.descVT || false;
+    document.getElementById('emp-descOutro1Check').checked = de.descOutro1Check || false;
+    document.getElementById('emp-descOutro1').value = de.descOutro1 || '';
+    document.getElementById('emp-provNoturno').checked = de.provNoturno || false;
+    document.getElementById('emp-provOutro1Check').checked = de.provOutro1Check || false;
+    document.getElementById('emp-provOutro1').value = de.provOutro1 || '';
+    const expRadio = document.querySelector(`input[name="emp-exp"][value="${de.experiencia || 'Sim'}"]`);
+    if (expRadio) expRadio.checked = true;
+    document.getElementById('emp-expDias').value = de.expDias || '45';
+    document.getElementById('emp-outras').value = de.outras || '';
+    modalEmpresa.classList.add('show');
+  });
+
+  function collectDadosEmpresa() {
+    return {
+      dataAdmissao: document.getElementById('emp-dataAdmissao').value,
+      cargo: document.getElementById('emp-cargo').value,
+      departamento: document.getElementById('emp-departamento').value,
+      salario: document.getElementById('emp-salario').value,
+      horario: document.getElementById('emp-horario').value,
+      periculosidade: document.querySelector('input[name="emp-pericul"]:checked')?.value || 'Não',
+      insalubridade: document.querySelector('input[name="emp-insalub"]:checked')?.value || 'Não',
+      superior: document.getElementById('emp-superior').value,
+      local: document.getElementById('emp-local').value,
+      descVT: document.getElementById('emp-descVT').checked,
+      descOutro1Check: document.getElementById('emp-descOutro1Check').checked,
+      descOutro1: document.getElementById('emp-descOutro1').value,
+      provNoturno: document.getElementById('emp-provNoturno').checked,
+      provOutro1Check: document.getElementById('emp-provOutro1Check').checked,
+      provOutro1: document.getElementById('emp-provOutro1').value,
+      experiencia: document.querySelector('input[name="emp-exp"]:checked')?.value || 'Sim',
+      expDias: document.getElementById('emp-expDias').value,
+      outras: document.getElementById('emp-outras').value
+    };
+  }
+
+  document.getElementById('btn-gerar-pdf-final').addEventListener('click', async () => {
+    const dadosEmpresa = collectDadosEmpresa();
+    // Salva os dados da empresa no Firestore (pra não perder)
+    if (USE_FIREBASE && currentDetail) {
+      try {
+        await fs.updateDoc(fs.doc(db, 'fichas', currentDetail.id), { dadosEmpresa });
+      } catch(e) { console.warn('Erro ao salvar dados empresa:', e); }
+    }
+    currentDetail.dadosEmpresa = dadosEmpresa;
+    generatePDF(currentDetail);
+    modalEmpresa.classList.remove('show');
+  });
+
+  function generatePDF(ficha) {
+    const d = ficha.dados || {};
+    const emp = EMPRESAS[ficha.empresa || 'agas'];
+    const sigFinal = ficha.assinaturas?.final;
+    const sigEtnia = ficha.assinaturas?.etnia;
+
+    // helpers ---------------------------------------------
+    // Usamos [X] e [  ] em texto puro — funciona em qualquer fonte do pdfmake
+    const cb = (val, opt) => {
+      if (!val || !opt) return '[  ]';
+      return val.trim().toLowerCase() === opt.trim().toLowerCase() ? '[X]' : '[  ]';
+    };
+    const cbLine = (options, selected) => options.map(o => `${cb(selected, o)} ${o}`).join('   ');
+    const val = (v) => v && String(v).trim() ? String(v) : ' ';
+    const fmtDate = (isoDate) => {
+      if (!isoDate || typeof isoDate !== 'string') return ' ';
+      const [y, m, dd] = isoDate.split('-');
+      if (!y || !m || !dd) return isoDate;
+      return `${dd}/${m}/${y}`;
+    };
+
+    // border layouts ---------------------------------------
+    const grayBorder = {
+      hLineWidth: () => 0.5, vLineWidth: () => 0.5,
+      hLineColor: () => '#808080', vLineColor: () => '#808080',
+      paddingLeft: () => 4, paddingRight: () => 4,
+      paddingTop: () => 3, paddingBottom: () => 3
+    };
+    const noBorder = {
+      hLineWidth: () => 0, vLineWidth: () => 0,
+      paddingLeft: () => 0, paddingRight: () => 0,
+      paddingTop: () => 0, paddingBottom: () => 0
+    };
+
+    // building blocks --------------------------------------
+    const banner = (text) => ({
+      table: { widths: ['*'], body: [[{ text, color: 'white', bold: true, fontSize: 10, fillColor: '#C00000', margin: [6, 4, 6, 4] }]] },
+      layout: noBorder,
+      margin: [0, 10, 0, 3]
+    });
+
+    const label = (text) => ({ text, fillColor: '#E7E6E6', bold: true, fontSize: 8 });
+    const valb  = (text) => ({ text: val(text), bold: true, fontSize: 10 });
+
+    // row com 2 pares (label|value|label|value)
+    const row2 = (l1, v1, l2, v2) => [label(l1), valb(v1), label(l2), valb(v2)];
+    // row com 1 campo full (spans 3 cells)
+    const row1 = (l, v) => [label(l), { text: val(v), colSpan: 3, bold: true, fontSize: 10 }, {}, {}];
+
+    // table wrapper 4-col
+    const t4 = (rows) => ({
+      table: { widths: [90, '*', 90, '*'], body: rows },
+      layout: grayBorder
+    });
+
+    // ─────────────────────────────────────────────────────
+    // Section 2: DADOS PESSOAIS - has special multi-line rows
+    // ─────────────────────────────────────────────────────
+    const dadosPessoais = {
+      table: {
+        widths: [90, '*', 90, '*'],
+        body: [
+          row1('Nome completo', d.nomeCompleto),
+          row2('Nome social', d.nomeSocial, 'Como prefere ser chamado', d.comoPrefere),
+          row2('Data de nascimento', fmtDate(d.dataNascimento), 'Naturalidade', d.naturalidade),
+          row2('Nacionalidade', d.nacionalidade, 'País de origem (se estrangeiro)', d.paisOrigem),
+          // Sexo + Raça/Cor
+          [
+            label('Sexo'),
+            { text: `${cb(d.sexo, 'Masculino')} Masculino   ${cb(d.sexo, 'Feminino')} Feminino`, fontSize: 9 },
+            label('Raça/Cor (IBGE)'),
+            { text: `${cb(d.raca, 'Branca')} Branca   ${cb(d.raca, 'Preta')} Preta\n${cb(d.raca, 'Parda')} Parda   ${cb(d.raca, 'Amarela')} Amarela\n${cb(d.raca, 'Indígena')} Indígena   ${cb(d.raca, 'Não declarada')} Não declarada`, fontSize: 9 }
+          ],
+          // Estado civil + PcD
+          [
+            label('Estado civil'),
+            { text: `${cb(d.estCivil, 'Solteiro(a)')} Solteiro(a)   ${cb(d.estCivil, 'Casado(a)')} Casado(a)\n${cb(d.estCivil, 'União estável')} União estável   ${cb(d.estCivil, 'Divorciado(a)')} Divorciado(a)\n${cb(d.estCivil, 'Viúvo(a)')} Viúvo(a)   ${cb(d.estCivil, 'Separado(a)')} Separado(a)`, fontSize: 9 },
+            label('PcD?'),
+            { text: `${cb(d.pcd, 'Não')} Não   ${cb(d.pcd, 'Sim')} Sim — qual: ${val(d.pcdQual)}`, fontSize: 9 }
+          ]
+        ]
+      },
+      layout: grayBorder
+    };
+
+    // ─────────────────────────────────────────────────────
+    // Section 7: DEPENDENTES
+    // ─────────────────────────────────────────────────────
+    const deps = d.dependentes || [];
+    const depRows = [
+      [
+        { text: 'Nome completo', ...label('Nome completo') },
+        { text: 'Parentesco', ...label('Parentesco') },
+        { text: 'Data nasc.', ...label('Data nasc.') },
+        { text: 'CPF', ...label('CPF') },
+        { text: 'IRRF', ...label('IRRF') },
+        { text: 'Sal-fam', ...label('Sal-fam') },
+        { text: 'Saúde', ...label('Saúde') }
+      ]
+    ];
+    // preencher 5 linhas (com dados dos dependentes ou em branco)
+    for (let i = 0; i < 5; i++) {
+      const dep = deps[i];
+      depRows.push([
+        { text: dep ? val(dep.nome) : ' ', fontSize: 9 },
+        { text: dep ? val(dep.parentesco) : ' ', fontSize: 9 },
+        { text: dep ? fmtDate(dep.nascimento) : ' ', fontSize: 9 },
+        { text: dep ? val(dep.cpf) : ' ', fontSize: 9 },
+        { text: dep ? (dep.irrf ? '[X]' : '[  ]') : '[  ]', fontSize: 9, alignment: 'center' },
+        { text: dep ? (dep.salFam ? '[X]' : '[  ]') : '[  ]', fontSize: 9, alignment: 'center' },
+        { text: dep ? (dep.saude ? '[X]' : '[  ]') : '[  ]', fontSize: 9, alignment: 'center' }
+      ]);
+    }
+    const dependentesTable = {
+      table: { widths: ['*', 60, 55, 65, 30, 30, 30], body: depRows },
+      layout: grayBorder
+    };
+
+    // ─────────────────────────────────────────────────────
+    // Section 8: ESCOLARIDADE
+    // ─────────────────────────────────────────────────────
+    const gi = d.instrucao || '';
+    const escolaridade = {
+      table: {
+        widths: [90, '*', 90, '*'],
+        body: [
+          [
+            label('Grau de instrução'),
+            { text: `${cb(gi, 'Analfabeto')} Analfabeto   ${cb(gi, 'Fundamental incompleto')} Fund. incompleto\n${cb(gi, 'Fundamental completo')} Fund. completo   ${cb(gi, 'Médio incompleto')} Médio incompleto\n${cb(gi, 'Médio completo')} Médio completo   ${cb(gi, 'Superior incompleto')} Sup. incompleto\n${cb(gi, 'Superior completo')} Sup. completo   ${cb(gi, 'Pós-graduação')} Pós-graduação`, fontSize: 8 },
+            label('Curso / Formação'),
+            valb(d.curso)
+          ],
+          row2('Instituição de ensino', d.instituicao, 'Ano de conclusão', d.anoConclusao),
+          row2('Cursos / certificações', d.cursos, 'Idiomas', d.idiomas)
+        ]
+      },
+      layout: grayBorder
+    };
+
+    // ─────────────────────────────────────────────────────
+    // Section 9: DADOS PROFISSIONAIS (preenchido pelo RH)
+    // ─────────────────────────────────────────────────────
+    const de = ficha.dadosEmpresa || {};
+    const dadosProf = t4([
+      row2('Cargo / função', de.cargo, 'Setor / departamento', de.departamento),
+      row2('Data de admissão', fmtDate(de.dataAdmissao), 'Salário base (R$)', de.salario),
+      row2('Jornada / horário de trabalho', de.horario, 'Período de experiência', (de.experiencia === 'Sim' ? de.expDias + ' dias' : 'Não')),
+      row2('Periculosidade', de.periculosidade, 'Insalubridade', de.insalubridade),
+      row2('Superior imediato', de.superior, 'Local de trabalho', de.local)
+    ]);
+
+    // ─────────────────────────────────────────────────────
+    // Section 10: VALE-TRANSPORTE
+    // ─────────────────────────────────────────────────────
+    const vt = {
+      table: {
+        widths: [140, '*'],
+        body: [[
+          label('Opta pelo vale-transporte?'),
+          { text: `${cb(d.vt, 'Sim')} Sim    ${cb(d.vt, 'Não')} Não`, fontSize: 10 }
+        ]]
+      },
+      layout: grayBorder
+    };
+
+    // ─────────────────────────────────────────────────────
+    // Section 12: SAÚDE
+    // ─────────────────────────────────────────────────────
+    const saudeRows = [
+      [label('Possui alergia a medicamento ou substância?'), { text: `${cb(d.alergia, 'Não')} Não   ${cb(d.alergia, 'Sim')} Sim — qual: ${val(d.alergiaQual)}`, fontSize: 9, colSpan: 3 }, {}, {}],
+      [label('Faz uso contínuo de medicamento?'), { text: `${cb(d.medcont, 'Não')} Não   ${cb(d.medcont, 'Sim')} Sim — qual: ${val(d.medContQual)}`, fontSize: 9, colSpan: 3 }, {}, {}],
+      [label('Possui restrição médica para alguma atividade?'), { text: `${cb(d.restr, 'Não')} Não   ${cb(d.restr, 'Sim')} Sim — qual: ${val(d.restrQual)}`, fontSize: 9, colSpan: 3 }, {}, {}],
+      [label('Já sofreu acidente de trabalho?'), { text: `${cb(d.acidente, 'Não')} Não   ${cb(d.acidente, 'Sim')} Sim — descreva: ${val(d.acidenteQual)}`, fontSize: 9, colSpan: 3 }, {}, {}],
+      row1('ASO admissional (data / médico)', '')
+    ];
+    const saude = { table: { widths: [160, '*', 90, '*'], body: saudeRows }, layout: grayBorder };
+
+    // ─────────────────────────────────────────────────────
+    // Section 13: CHECKLIST DE DOCUMENTOS (todos em branco)
+    // ─────────────────────────────────────────────────────
+    const docList = [
+      'CTPS digital (print do app)',
+      'RG e CPF (cópia)',
+      'Comprovante de endereço atualizado',
+      'Título de eleitor',
+      'Certificado de reservista (homens)',
+      'Certidão de nascimento / casamento',
+      'Certidão de nascimento e CPF dos dependentes',
+      'Comprovante de escolaridade',
+      '1 foto 3x4',
+      'CNH (se função exigir)',
+      'Certificado de MOPP (obrigatório para motoristas)',
+      'ASO admissional',
+      'Cartão de vacinação atualizado',
+      'Declaração de Etnia assinada (Lei 14.553/2023)'
+    ];
+    const checklistDocs = { ul: docList.map(t => ({ text: '[  ]  ' + t, fontSize: 9, margin: [0, 1, 0, 1] })), type: 'none', margin: [0, 4, 0, 0] };
+
+    // ─────────────────────────────────────────────────────
+    // Section 14: DECLARAÇÕES
+    // ─────────────────────────────────────────────────────
+    const declaracoes = [
+      '• Declaro que todas as informações prestadas nesta ficha são verdadeiras e me responsabilizo, civil e criminalmente, pela veracidade dos dados informados.',
+      '• Comprometo-me a comunicar formalmente ao RH qualquer alteração de endereço, estado civil, dependentes ou demais dados cadastrais.',
+      '• Autorizo a empresa a tratar meus dados pessoais para as finalidades de contratação, gestão do contrato de trabalho e cumprimento de obrigações legais, nos termos da Lei nº 13.709/2018 (LGPD).',
+      '• Declaro estar ciente de que o descumprimento de normas internas, do contrato de trabalho ou das normas de segurança do trabalho pode ensejar sanções disciplinares previstas em lei.'
+    ].map(t => ({ text: t, fontSize: 9, alignment: 'justify', margin: [0, 2, 0, 2] }));
+
+    // ─────────────────────────────────────────────────────
+    // Section 15: ASSINATURAS
+    // ─────────────────────────────────────────────────────
+    const assinaturas = {
+      columns: [
+        {
+          width: '*',
+          stack: [
+            sigFinal ? { image: sigFinal, width: 200, height: 60, margin: [0, 4, 0, 0] } : { text: ' ', margin: [0, 20, 0, 0] },
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.7 }] },
+            { text: 'Assinatura do funcionário (digital)', alignment: 'center', bold: true, fontSize: 9, margin: [0, 2, 0, 0] }
+          ]
+        },
+        { width: 20, text: '' },
+        {
+          width: '*',
+          stack: [
+            { text: ' ', margin: [0, 30, 0, 0] },
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.7 }] },
+            { text: 'Assinatura e carimbo do RH', alignment: 'center', bold: true, fontSize: 9, margin: [0, 2, 0, 0] }
+          ]
+        }
+      ],
+      margin: [0, 20, 0, 0]
+    };
+
+    // ─────────────────────────────────────────────────────
+    // Declaração de Etnia (página separada)
+    // ─────────────────────────────────────────────────────
+    const etniaOpt = d.etnia || '';
+    const etniaPage = [
+      { text: emp.nome, bold: true, alignment: 'center', fontSize: 13, pageBreak: 'before', margin: [0, 0, 0, 2] },
+      { text: 'CNPJ: ' + emp.cnpj, alignment: 'center', color: '#595959', fontSize: 9, margin: [0, 0, 0, 20] },
+      banner('DECLARAÇÃO DE ETNIA – Lei nº 14.553/2023'),
+      { text: 'Em atendimento à Lei nº 14.553, de 25 de abril de 2023, que determina a inclusão de informações étnico-raciais em registros de trabalhadores, bem como sua atualização no e-Social,', alignment: 'justify', fontSize: 10, margin: [0, 12, 0, 8] },
+      { text: [{ text: 'eu, ' }, { text: val(d.nomeCompleto).padEnd(80, ' '), decoration: 'underline' }, { text: ',' }], fontSize: 10, margin: [0, 4, 0, 4] },
+      { text: [{ text: 'inscrito(a) no CPF sob o nº ' }, { text: val(d.cpf).padEnd(30, ' '), decoration: 'underline' }, { text: ', abaixo assinado(a), me autodeclaro:' }], fontSize: 10, margin: [0, 0, 0, 16] },
+      // Opções de etnia (tabela)
+      {
+        table: {
+          widths: [30, 30, '*'],
+          body: [
+            [{ text: cb(etniaOpt, 'Branco(a)'), alignment: 'center', fontSize: 14 }, { text: '1', bold: true, alignment: 'center', fillColor: '#E7E6E6' }, { text: 'Branco(a)', fontSize: 10, margin: [8, 0, 0, 0] }],
+            [{ text: cb(etniaOpt, 'Preto(a)'), alignment: 'center', fontSize: 14 }, { text: '2', bold: true, alignment: 'center', fillColor: '#E7E6E6' }, { text: 'Preto(a)', fontSize: 10, margin: [8, 0, 0, 0] }],
+            [{ text: cb(etniaOpt, 'Pardo(a)'), alignment: 'center', fontSize: 14 }, { text: '3', bold: true, alignment: 'center', fillColor: '#E7E6E6' }, { text: 'Pardo(a)', fontSize: 10, margin: [8, 0, 0, 0] }],
+            [{ text: cb(etniaOpt, 'Amarelo(a)'), alignment: 'center', fontSize: 14 }, { text: '4', bold: true, alignment: 'center', fillColor: '#E7E6E6' }, { text: 'Amarelo(a)', fontSize: 10, margin: [8, 0, 0, 0] }],
+            [{ text: cb(etniaOpt, 'Indígena'), alignment: 'center', fontSize: 14 }, { text: '5', bold: true, alignment: 'center', fillColor: '#E7E6E6' }, { text: 'Indígena', fontSize: 10, margin: [8, 0, 0, 0] }]
+          ]
+        },
+        layout: grayBorder,
+        margin: [0, 0, 0, 20]
+      },
+      { text: [{ text: 'Declaro estar ciente de que, em caso de falsidade ideológica, conforme o ' }, { text: 'artigo 299 do Código Penal Brasileiro', bold: true }, { text: ', ficarei sujeito(a) às sanções legais aplicáveis.' }], alignment: 'justify', fontSize: 10, margin: [0, 0, 0, 30] },
+      { text: `Itaúna/MG, ${new Date().getDate().toString().padStart(2,'0')} de ${['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][new Date().getMonth()]} de ${new Date().getFullYear()}.`, fontSize: 10, margin: [0, 20, 0, 40] },
+      // Assinatura da declaração de etnia
+      sigEtnia
+        ? { image: sigEtnia, width: 240, height: 70, alignment: 'center' }
+        : { text: ' ', margin: [0, 40, 0, 0] },
+      { canvas: [{ type: 'line', x1: 100, y1: 0, x2: 400, y2: 0, lineWidth: 0.7 }] },
+      { text: 'Assinatura do(a) declarante', alignment: 'center', bold: true, fontSize: 10, margin: [0, 4, 0, 0] }
+    ];
+
+    // ─────────────────────────────────────────────────────
+    // MONTAR O DOCUMENTO
+    // ─────────────────────────────────────────────────────
+    const docDefinition = {
+      pageSize: 'LETTER',
+      pageMargins: [40, 55, 40, 40],
+      header: (currentPage, pageCount) => ({ text: emp.nome + ' — Ficha de Admissão', alignment: 'right', color: '#808080', fontSize: 8, margin: [40, 20, 40, 0] }),
+      footer: (currentPage, pageCount) => ({ text: `Página ${currentPage} de ${pageCount}`, alignment: 'center', color: '#808080', fontSize: 8, margin: [0, 10, 0, 0] }),
+      defaultStyle: { fontSize: 10 },
+      content: [
+        { text: 'FICHA DE ADMISSÃO – COLETA DE DADOS DO FUNCIONÁRIO', bold: true, fontSize: 13, alignment: 'center', margin: [0, 0, 0, 4] },
+        { text: 'Documento de uso interno do RH — todos os campos devem ser preenchidos pelo candidato e conferidos pelo RH.', italics: true, fontSize: 8, alignment: 'center', color: '#595959', margin: [0, 0, 0, 12] },
+
+        banner('1. IDENTIFICAÇÃO DA EMPRESA'),
+        t4([
+          row2('Empresa', emp.nome, 'CNPJ', emp.cnpj),
+          row2('Endereço', emp.endereco, 'CEP', emp.cep),
+          [label('Cidade/UF'), { text: emp.cidadeUF, bold: true, fontSize: 10, colSpan: 3 }, {}, {}]
+        ]),
+
+        banner('2. DADOS PESSOAIS'),
+        dadosPessoais,
+
+        banner('3. FILIAÇÃO'),
+        t4([
+          [label('Nome do pai'), { text: val(d.nomePai), colSpan: 3, bold: true, fontSize: 10 }, {}, {}],
+          [label('Nome da mãe'), { text: val(d.nomeMae), colSpan: 3, bold: true, fontSize: 10 }, {}, {}]
+        ]),
+
+        banner('4. ENDEREÇO E CONTATO'),
+        {
+          table: {
+            widths: [90, '*', 90, '*'],
+            body: [
+              [label('Endereço (rua, nº, complemento)'), { text: val(d.endereco), colSpan: 3, bold: true, fontSize: 10 }, {}, {}]
+            ]
+          },
+          layout: grayBorder
+        },
+        {
+          table: {
+            widths: [55, 130, 55, '*', 30, 60],
+            body: [[
+              label('Bairro'), valb(d.bairro),
+              label('Cidade'), valb(d.cidade),
+              label('UF'), valb(d.uf)
+            ]]
+          },
+          layout: grayBorder
+        },
+        t4([
+          row2('CEP', d.cep, 'Telefone celular', d.celular),
+          row2('Telefone recado', d.recado, 'E-mail pessoal', d.email),
+          row2('Tem WhatsApp?', `${cb(d.whats,'Sim')} Sim   ${cb(d.whats,'Outro')} Outro   ${cb(d.whats,'Não')} Não`, 'Nº WhatsApp (se diferente)', d.whatsOutro)
+        ]),
+
+        banner('5. DOCUMENTAÇÃO'),
+        t4([
+          row2('CPF', d.cpf, 'RG / nº', d.rg),
+          row2('RG — órgão emissor / UF', d.rgOrgao, 'RG — data de emissão', fmtDate(d.rgData)),
+          row2('CTPS — nº / série', d.ctpsNumero, 'CTPS — UF / data de emissão', d.ctpsData),
+          row2('PIS / PASEP / NIT', d.pis, 'Título de eleitor', d.titulo),
+          row2('Zona / Seção eleitoral', d.zonaSecao, 'Reservista (se aplicável)', d.reservista),
+          row2('CNH — nº', d.cnhNumero, 'CNH — categoria', d.cnhCategoria),
+          row2('CNH — validade', fmtDate(d.cnhValidade), 'CNH — 1ª habilitação', fmtDate(d.cnhPrimeira))
+        ]),
+
+        banner('6. CÔNJUGE / COMPANHEIRO(A) (se houver)'),
+        t4([
+          [label('Nome completo'), { text: val(d.conjugeNome), colSpan: 3, bold: true, fontSize: 10 }, {}, {}],
+          row2('CPF', d.conjugeCpf, 'Data de nascimento', fmtDate(d.conjugeNasc)),
+          row2('Trabalha?', d.conjTrab, 'Empresa onde trabalha', d.conjugeEmpresa)
+        ]),
+
+        banner('7. DEPENDENTES (para IRRF, salário-família e plano de saúde)'),
+        { text: 'Marque com [X] a finalidade da dependência. Anexar certidão de nascimento / CPF dos dependentes.', italics: true, color: '#595959', fontSize: 8, margin: [0, 0, 0, 4] },
+        dependentesTable,
+
+        banner('8. ESCOLARIDADE E QUALIFICAÇÃO'),
+        escolaridade,
+
+        banner('9. DADOS PROFISSIONAIS (preenchimento do RH)'),
+        dadosProf,
+
+        // Bloco extra: PARA USO DA EMPRESA
+        {
+          table: {
+            widths: ['*'],
+            body: [[{ text: 'PARA USO DA EMPRESA', bold: true, fontSize: 10, alignment: 'center', fillColor: '#1A1A1A', color: 'white', margin: [0, 3, 0, 3] }]]
+          },
+          layout: noBorder,
+          margin: [0, 10, 0, 3]
+        },
+        {
+          table: {
+            widths: [160, '*', 160, '*'],
+            body: [
+              [label('*Data de admissão'), valb(fmtDate(de.dataAdmissao)), label('Função'), { text: val(de.cargo) + ' (conforme ASO)', fontSize: 9 }],
+              [label('Departamento'), valb(de.departamento), label('*Salário'), valb('R$ ' + (de.salario || ''))],
+              [{ text: '*Horário de trabalho:', ...label('*Horário'), colSpan: 1 }, { text: val(de.horario), bold: true, fontSize: 9, colSpan: 3 }, {}, {}],
+              [label('Periculosidade'), { text: `${de.periculosidade === 'Sim' ? '(X) Sim' : '(  ) Sim'}  ${de.periculosidade === 'Não' ? '(X) Não' : '(  ) Não'}`, fontSize: 9 },
+               label('Insalubridade'), { text: `${de.insalubridade === 'Sim' ? '(X) Sim' : '(  ) Sim'}  ${de.insalubridade === 'Não' ? '(X) Não' : '(  ) Não'}`, fontSize: 9 }]
+            ]
+          },
+          layout: grayBorder
+        },
+        {
+          table: {
+            widths: ['*', '*'],
+            body: [[
+              { text: `*Descontos:\n    ${de.descVT ? '(X)' : '(  )'} Vale-transporte\n    ${de.descOutro1Check ? '(X) ' + val(de.descOutro1) : '(  ) ___________________'}`, fontSize: 9, lineHeight: 1.4 },
+              { text: `*Proventos:\n    ${de.provNoturno ? '(X)' : '(  )'} Adicional noturno\n    ${de.provOutro1Check ? '(X) ' + val(de.provOutro1) : '(  ) ___________________'}`, fontSize: 9, lineHeight: 1.4 }
+            ]]
+          },
+          layout: grayBorder
+        },
+        {
+          table: {
+            widths: ['*'],
+            body: [[{
+              text: `*Funcionário com Contrato de experiência: ${de.experiencia === 'Sim' ? '(X) Sim' : '(  ) Sim'}    ${de.experiencia === 'Não' ? '(X) Não' : '(  ) Não'}    *Quantos dias: ${de.experiencia === 'Sim' ? (de.expDias || '45') : '___'}    30, 60, 45 ou 90`,
+              fontSize: 9
+            }]]
+          },
+          layout: grayBorder
+        },
+        de.outras ? { text: 'Outras informações: ' + de.outras, fontSize: 9, margin: [0, 4, 0, 0] } : { text: '', margin: [0, 0, 0, 0] },
+
+        banner('10. VALE-TRANSPORTE'),
+        vt,
+
+        banner('11. CONTATO EM CASO DE EMERGÊNCIA'),
+        t4([
+          row2('Nome', d.emerNome, 'Parentesco', d.emerParentesco),
+          row2('Telefone', d.emerTelefone, 'Telefone alternativo', d.emerTelefone2)
+        ]),
+
+        banner('12. INFORMAÇÕES DE SAÚDE / SEGURANÇA DO TRABALHO'),
+        saude,
+
+        banner('13. DOCUMENTOS ENTREGUES AO RH (conferência)'),
+        checklistDocs,
+
+        banner('14. DECLARAÇÕES DO FUNCIONÁRIO'),
+        ...declaracoes,
+
+        banner('15. ASSINATURAS'),
+        { text: 'Local e data: ______________________________________________, ______ / ______ / __________', fontSize: 10, margin: [0, 15, 0, 0] },
+        assinaturas,
+
+        // Declaração de Etnia (nova página)
+        ...etniaPage
+      ]
+    };
+
+    // Gerar PDF
+    const filename = `Admissao_${(d.nomeCompleto || 'ficha').replace(/[^a-zA-Z0-9]/g, '_')}_${(ficha.empresa || 'agas').toUpperCase()}.pdf`;
+    pdfMake.createPdf(docDefinition).download(filename);
+  }
+
+  document.getElementById('btn-copiar-link').addEventListener('click', () => {
+    if (!currentDetail) return;
+    const baseUrl = location.href.replace(/admin\.html.*$/, '');
+    const link = `${baseUrl}?id=${currentDetail.id}&empresa=${currentDetail.empresa || 'agas'}`;
+    navigator.clipboard.writeText(link).then(() => {
+      const btn = document.getElementById('btn-copiar-link');
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copiado!';
+      setTimeout(() => btn.textContent = orig, 1500);
+    });
+  });
+
+  // Modal close
+  document.querySelectorAll('[data-close]').forEach(el => {
+    el.addEventListener('click', () => {
+      el.closest('.modal-overlay').classList.remove('show');
+    });
+  });
+  document.querySelectorAll('.modal-overlay').forEach(ov => {
+    ov.addEventListener('click', (e) => {
+      if (e.target === ov) ov.classList.remove('show');
+    });
+  });
+
+  // Filtros
+  ['filter-empresa', 'filter-status'].forEach(id => {
+    document.getElementById(id).addEventListener('change', render);
+  });
+  document.getElementById('filter-search').addEventListener('input', render);
+
+  loadFichas();
+</script>
+
+</body>
+</html>

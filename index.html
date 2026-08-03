@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#C00000">
+<title>Ficha de Admissão</title>
+<style>
+  :root {
+    --primary: #C00000;
+    --primary-dark: #8B0000;
+    --gray-100: #F5F5F5;
+    --gray-200: #E7E6E6;
+    --gray-300: #D0D0D0;
+    --gray-500: #808080;
+    --gray-700: #4A4A4A;
+    --gray-900: #1A1A1A;
+    --success: #2E7D32;
+    --error: #C62828;
+    --warn: #F57C00;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --safe-bottom: env(safe-area-inset-bottom, 0);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    color: var(--gray-900);
+    background: var(--gray-100);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+  .app { max-width: 720px; margin: 0 auto; min-height: 100vh; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
+
+  /* ------- HEADER ------- */
+  header.app-header { background: var(--primary); color: white; padding: 12px 16px 0; position: sticky; top: 0; z-index: 10; }
+  header .brand-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  header .empresa { font-size: 12px; opacity: 0.9; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  header .step-count { font-size: 12px; opacity: 0.9; }
+  header h1 { margin: 0 0 12px; font-size: 18px; font-weight: 700; }
+  .progress-bar { height: 4px; background: rgba(255,255,255,0.25); border-radius: 4px; overflow: hidden; margin-bottom: -2px; }
+  .progress-fill { height: 100%; background: white; width: 0%; transition: width 0.3s ease; border-radius: 4px; }
+
+  /* ------- MAIN ------- */
+  main.app-main { flex: 1; padding: 20px 16px 120px; }
+  .step { display: none; animation: fadeIn 0.25s ease; }
+  .step.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  h2.step-title { color: var(--primary); font-size: 20px; margin: 0 0 6px; font-weight: 700; }
+  p.step-subtitle { color: var(--gray-500); font-size: 14px; margin: 0 0 20px; }
+
+  /* section header inside a step */
+  .section-heading { background: var(--primary); color: white; padding: 8px 12px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px; border-radius: 4px; margin: 24px 0 12px; text-transform: uppercase; }
+
+  /* ------- FORM ELEMENTS ------- */
+  .field { margin-bottom: 16px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field-row.three { grid-template-columns: 2fr 2fr 1fr; }
+  @media (max-width: 480px) { .field-row, .field-row.three { grid-template-columns: 1fr; } }
+
+  label.field-label { display: block; font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 6px; }
+  label.field-label .required { color: var(--primary); margin-left: 2px; }
+  .field-hint { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+
+  input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"], select, textarea {
+    width: 100%; padding: 12px 12px; font-size: 16px; font-family: inherit; border: 1.5px solid var(--gray-300); border-radius: 6px; background: white; color: var(--gray-900); appearance: none;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(192,0,0,0.1); }
+  input.error, select.error, textarea.error { border-color: var(--error); }
+  textarea { min-height: 80px; resize: vertical; }
+
+  /* radios / checkboxes as pill buttons */
+  .options { display: flex; flex-wrap: wrap; gap: 8px; }
+  .options.stack { flex-direction: column; }
+  .option { position: relative; }
+  .option input { position: absolute; opacity: 0; pointer-events: none; }
+  .option label { display: inline-block; padding: 10px 16px; border: 1.5px solid var(--gray-300); border-radius: 24px; cursor: pointer; font-size: 14px; font-weight: 500; background: white; user-select: none; transition: all 0.15s; min-height: 40px; line-height: 20px; }
+  .option input:checked + label { background: var(--primary); color: white; border-color: var(--primary); }
+  .option input:focus + label { box-shadow: 0 0 0 3px rgba(192,0,0,0.2); }
+  .options.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .options.grid .option label { display: block; text-align: center; }
+
+  /* checkbox list (declarations, docs) */
+  .check-list { list-style: none; padding: 0; margin: 0; }
+  .check-list li { padding: 10px 0; border-bottom: 1px solid var(--gray-200); display: flex; align-items: flex-start; gap: 12px; }
+  .check-list li:last-child { border-bottom: none; }
+  .check-list input[type="checkbox"] { width: 22px; height: 22px; margin-top: 2px; flex-shrink: 0; accent-color: var(--primary); cursor: pointer; }
+  .check-list label { flex: 1; font-size: 14px; cursor: pointer; }
+
+  /* dependente card */
+  .dep-card { border: 1.5px solid var(--gray-200); border-radius: 8px; padding: 14px; margin-bottom: 12px; background: var(--gray-100); position: relative; }
+  .dep-card .dep-title { font-weight: 600; margin-bottom: 12px; color: var(--gray-700); font-size: 14px; }
+  .dep-remove { position: absolute; top: 8px; right: 8px; background: none; border: none; color: var(--error); font-size: 20px; cursor: pointer; padding: 4px 8px; }
+  .btn-add-dep { display: inline-block; padding: 10px 16px; background: white; border: 1.5px dashed var(--primary); color: var(--primary); border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 4px; }
+
+  /* etnia options - larger blocks */
+  .etnia-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 400px) { .etnia-grid { grid-template-columns: 1fr; } }
+  .etnia-opt { position: relative; }
+  .etnia-opt input { position: absolute; opacity: 0; pointer-events: none; }
+  .etnia-opt label { display: block; padding: 16px 12px; background: white; border: 2px solid var(--gray-300); border-radius: 8px; font-weight: 600; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .etnia-opt input:checked + label { background: var(--primary); color: white; border-color: var(--primary); }
+
+  /* signature canvas */
+  .sig-wrapper { border: 2px solid var(--gray-300); border-radius: 8px; background: white; overflow: hidden; margin: 8px 0 4px; }
+  .sig-canvas { display: block; width: 100%; height: 180px; touch-action: none; cursor: crosshair; background: repeating-linear-gradient(0deg, transparent, transparent 178px, #eaeaea 178px, #eaeaea 180px); }
+  .sig-actions { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--gray-500); }
+  .sig-clear { background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; padding: 4px 8px; font-size: 13px; }
+
+  /* declaration box */
+  .decl-box { background: var(--gray-100); border-left: 4px solid var(--primary); padding: 14px 16px; margin-bottom: 12px; font-size: 14px; border-radius: 0 6px 6px 0; }
+  .decl-box strong { display: block; margin-bottom: 4px; color: var(--primary); }
+
+  /* review page */
+  .review-section { background: var(--gray-100); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+  .review-section h3 { margin: 0 0 8px; font-size: 14px; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .review-section .row { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: 14px; border-bottom: 1px solid var(--gray-200); }
+  .review-section .row:last-child { border-bottom: none; }
+  .review-section .row .k { color: var(--gray-500); flex-shrink: 0; }
+  .review-section .row .v { text-align: right; font-weight: 500; word-break: break-word; }
+  .review-section .empty-v { color: var(--gray-500); font-style: italic; }
+
+  /* footer nav */
+  footer.app-footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--gray-200); padding: 12px 16px calc(12px + var(--safe-bottom)); z-index: 10; }
+  footer .inner { max-width: 720px; margin: 0 auto; display: flex; gap: 8px; }
+  .btn { flex: 1; padding: 14px 16px; font-size: 15px; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; font-family: inherit; min-height: 48px; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:disabled { background: var(--gray-300); cursor: not-allowed; }
+  .btn-secondary { background: var(--gray-200); color: var(--gray-700); }
+  .btn-full { width: 100%; }
+
+  /* welcome & final screens */
+  .center-screen { text-align: center; padding: 40px 20px; }
+  .center-screen .icon { font-size: 64px; margin-bottom: 16px; line-height: 1; }
+  .center-screen h2 { font-size: 24px; margin: 0 0 12px; }
+  .center-screen p { color: var(--gray-700); margin: 0 0 20px; font-size: 15px; }
+
+  /* saving indicator */
+  .saving-indicator { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--gray-900); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; opacity: 0; transition: opacity 0.3s; z-index: 20; }
+  .saving-indicator.show { opacity: 0.9; }
+
+  /* error message */
+  .field-error { color: var(--error); font-size: 12px; margin-top: 4px; display: none; }
+  .field-error.show { display: block; }
+
+  /* full-screen loader */
+  .loader { position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 100; flex-direction: column; gap: 12px; }
+  .spinner { width: 40px; height: 40px; border: 4px solid var(--gray-200); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="loader" id="loader">
+  <div class="spinner"></div>
+  <div style="color: var(--gray-500); font-size: 14px;">Carregando…</div>
+</div>
+
+<div class="app" id="app" style="display:none">
+  <header class="app-header">
+    <div class="brand-line">
+      <span class="empresa" id="empresa-name">—</span>
+      <span class="step-count" id="step-count">Passo 1 de 8</span>
+    </div>
+    <h1>Ficha de Admissão</h1>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- ===== STEP 1: WELCOME ===== -->
+    <section class="step active" data-step="1">
+      <div class="center-screen">
+        <div class="icon">👋</div>
+        <h2>Bem-vindo(a)!</h2>
+        <p>Você foi convidado(a) a preencher a sua ficha de admissão para <strong id="empresa-name-body">—</strong>.</p>
+        <p>São <strong>8 passos rápidos</strong>. Seu progresso é salvo automaticamente, então você pode fechar e voltar depois. Ao final, você vai assinar digitalmente.</p>
+        <p style="font-size: 13px; color: var(--gray-500);">Prepare os documentos: RG, CPF, CTPS digital, título de eleitor, comprovante de endereço e escolaridade.</p>
+      </div>
+    </section>
+
+    <!-- ===== STEP 2: DADOS PESSOAIS ===== -->
+    <section class="step" data-step="2">
+      <h2 class="step-title">Dados pessoais</h2>
+      <p class="step-subtitle">Preencha com atenção — esses dados vão para a Carteira de Trabalho e o eSocial.</p>
+
+      <div class="field">
+        <label class="field-label">Nome completo <span class="required">*</span></label>
+        <input type="text" id="f-nomeCompleto" autocomplete="name" required>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Nome social <span class="field-hint">(se houver)</span></label>
+          <input type="text" id="f-nomeSocial">
+        </div>
+        <div class="field">
+          <label class="field-label">Como prefere ser chamado(a)</label>
+          <input type="text" id="f-comoPrefere">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Data de nascimento <span class="required">*</span></label>
+          <input type="date" id="f-dataNascimento" required>
+        </div>
+        <div class="field">
+          <label class="field-label">Naturalidade (cidade/UF) <span class="required">*</span></label>
+          <input type="text" id="f-naturalidade" placeholder="Ex: Itaúna/MG" required>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Nacionalidade <span class="required">*</span></label>
+          <input type="text" id="f-nacionalidade" value="Brasileira" required>
+        </div>
+        <div class="field">
+          <label class="field-label">País de origem <span class="field-hint">(se estrangeiro)</span></label>
+          <input type="text" id="f-paisOrigem">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Sexo <span class="required">*</span></label>
+        <div class="options">
+          <div class="option"><input type="radio" name="sexo" value="Masculino" id="sexo-m"><label for="sexo-m">Masculino</label></div>
+          <div class="option"><input type="radio" name="sexo" value="Feminino" id="sexo-f"><label for="sexo-f">Feminino</label></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Raça/Cor (autodeclaração IBGE) <span class="required">*</span></label>
+        <div class="options">
+          <div class="option"><input type="radio" name="raca" value="Branca" id="r-b"><label for="r-b">Branca</label></div>
+          <div class="option"><input type="radio" name="raca" value="Preta" id="r-p"><label for="r-p">Preta</label></div>
+          <div class="option"><input type="radio" name="raca" value="Parda" id="r-pa"><label for="r-pa">Parda</label></div>
+          <div class="option"><input type="radio" name="raca" value="Amarela" id="r-a"><label for="r-a">Amarela</label></div>
+          <div class="option"><input type="radio" name="raca" value="Indígena" id="r-i"><label for="r-i">Indígena</label></div>
+          <div class="option"><input type="radio" name="raca" value="Não declarada" id="r-n"><label for="r-n">Não declarada</label></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Estado civil <span class="required">*</span></label>
+        <div class="options">
+          <div class="option"><input type="radio" name="estCivil" value="Solteiro(a)" id="ec-s"><label for="ec-s">Solteiro(a)</label></div>
+          <div class="option"><input type="radio" name="estCivil" value="Casado(a)" id="ec-c"><label for="ec-c">Casado(a)</label></div>
+          <div class="option"><input type="radio" name="estCivil" value="União estável" id="ec-u"><label for="ec-u">União estável</label></div>
+          <div class="option"><input type="radio" name="estCivil" value="Divorciado(a)" id="ec-d"><label for="ec-d">Divorciado(a)</label></div>
+          <div class="option"><input type="radio" name="estCivil" value="Viúvo(a)" id="ec-v"><label for="ec-v">Viúvo(a)</label></div>
+          <div class="option"><input type="radio" name="estCivil" value="Separado(a)" id="ec-se"><label for="ec-se">Separado(a)</label></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Pessoa com deficiência (PcD)?</label>
+        <div class="options">
+          <div class="option"><input type="radio" name="pcd" value="Não" id="pcd-n" checked><label for="pcd-n">Não</label></div>
+          <div class="option"><input type="radio" name="pcd" value="Sim" id="pcd-s"><label for="pcd-s">Sim</label></div>
+        </div>
+        <input type="text" id="f-pcdQual" placeholder="Qual deficiência?" style="margin-top: 8px; display:none">
+      </div>
+    </section>
+
+    <!-- ===== STEP 3: FILIAÇÃO + ENDEREÇO + CONTATO ===== -->
+    <section class="step" data-step="3">
+      <h2 class="step-title">Filiação, endereço e contato</h2>
+
+      <div class="section-heading">Filiação</div>
+      <div class="field">
+        <label class="field-label">Nome do pai</label>
+        <input type="text" id="f-nomePai">
+      </div>
+      <div class="field">
+        <label class="field-label">Nome da mãe <span class="required">*</span></label>
+        <input type="text" id="f-nomeMae" required>
+      </div>
+
+      <div class="section-heading">Endereço residencial</div>
+      <div class="field">
+        <label class="field-label">Endereço completo (rua, nº, complemento) <span class="required">*</span></label>
+        <input type="text" id="f-endereco" placeholder="Ex: Rua das Flores, 123, Apto 2" required>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Bairro <span class="required">*</span></label>
+          <input type="text" id="f-bairro" required>
+        </div>
+        <div class="field">
+          <label class="field-label">CEP <span class="required">*</span></label>
+          <input type="text" id="f-cep" placeholder="00000-000" required>
+        </div>
+      </div>
+      <div class="field-row three">
+        <div class="field">
+          <label class="field-label">Cidade <span class="required">*</span></label>
+          <input type="text" id="f-cidade" value="Itaúna" required>
+        </div>
+        <div class="field">
+          <label class="field-label">UF <span class="required">*</span></label>
+          <input type="text" id="f-uf" value="MG" maxlength="2" required>
+        </div>
+        <div></div>
+      </div>
+
+      <div class="section-heading">Contato</div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Telefone celular <span class="required">*</span></label>
+          <input type="tel" id="f-celular" placeholder="(37) 90000-0000" required>
+        </div>
+        <div class="field">
+          <label class="field-label">Telefone recado</label>
+          <input type="tel" id="f-recado">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">E-mail pessoal <span class="required">*</span></label>
+        <input type="email" id="f-email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label class="field-label">Você usa WhatsApp?</label>
+        <div class="options">
+          <div class="option"><input type="radio" name="whats" value="Sim" id="w-s" checked><label for="w-s">Sim, no mesmo celular</label></div>
+          <div class="option"><input type="radio" name="whats" value="Outro" id="w-o"><label for="w-o">Sim, em outro número</label></div>
+          <div class="option"><input type="radio" name="whats" value="Não" id="w-n"><label for="w-n">Não</label></div>
+        </div>
+        <input type="tel" id="f-whatsOutro" placeholder="Nº do WhatsApp" style="margin-top: 8px; display:none">
+      </div>
+    </section>
+
+    <!-- ===== STEP 4: DOCUMENTAÇÃO ===== -->
+    <section class="step" data-step="4">
+      <h2 class="step-title">Documentação</h2>
+      <p class="step-subtitle">Os originais serão conferidos pela empresa no dia da admissão.</p>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">CPF <span class="required">*</span></label>
+          <input type="text" id="f-cpf" placeholder="000.000.000-00" required>
+        </div>
+        <div class="field">
+          <label class="field-label">RG (nº) <span class="required">*</span></label>
+          <input type="text" id="f-rg" required>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">RG – órgão emissor / UF</label>
+          <input type="text" id="f-rgOrgao" placeholder="SSP/MG">
+        </div>
+        <div class="field">
+          <label class="field-label">RG – data de emissão</label>
+          <input type="date" id="f-rgData">
+        </div>
+      </div>
+
+      <div class="section-heading">CTPS (Carteira de Trabalho)</div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Nº / série</label>
+          <input type="text" id="f-ctpsNumero" placeholder="Se digital, deixe em branco">
+        </div>
+        <div class="field">
+          <label class="field-label">UF / data de emissão</label>
+          <input type="text" id="f-ctpsData">
+        </div>
+      </div>
+
+      <div class="section-heading">Outros documentos</div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">PIS / PASEP / NIT <span class="required">*</span></label>
+          <input type="text" id="f-pis" required>
+        </div>
+        <div class="field">
+          <label class="field-label">Título de eleitor</label>
+          <input type="text" id="f-titulo">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Zona / seção eleitoral</label>
+          <input type="text" id="f-zonaSecao" placeholder="Ex: 123 / 45">
+        </div>
+        <div class="field">
+          <label class="field-label">Reservista <span class="field-hint">(homens)</span></label>
+          <input type="text" id="f-reservista">
+        </div>
+      </div>
+
+      <div class="section-heading">CNH (se possuir)</div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">CNH – nº</label>
+          <input type="text" id="f-cnhNumero">
+        </div>
+        <div class="field">
+          <label class="field-label">Categoria</label>
+          <input type="text" id="f-cnhCategoria" placeholder="Ex: B, D, E">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Validade</label>
+          <input type="date" id="f-cnhValidade">
+        </div>
+        <div class="field">
+          <label class="field-label">1ª habilitação</label>
+          <input type="date" id="f-cnhPrimeira">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Possui Certificado de MOPP?</label>
+        <div class="options">
+          <div class="option"><input type="radio" name="mopp" value="Não" id="mopp-n" checked><label for="mopp-n">Não</label></div>
+          <div class="option"><input type="radio" name="mopp" value="Sim" id="mopp-s"><label for="mopp-s">Sim</label></div>
+        </div>
+        <input type="date" id="f-moppValidade" style="margin-top: 8px; display:none" placeholder="Validade do MOPP">
+      </div>
+    </section>
+
+    <!-- ===== STEP 5: FAMÍLIA ===== -->
+    <section class="step" data-step="5">
+      <h2 class="step-title">Família e dependentes</h2>
+
+      <div class="section-heading" id="conjuge-heading" style="display:none">Cônjuge / companheiro(a)</div>
+      <div id="conjuge-section" style="display:none">
+        <div class="field">
+          <label class="field-label">Nome completo</label>
+          <input type="text" id="f-conjugeNome">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">CPF</label>
+            <input type="text" id="f-conjugeCpf">
+          </div>
+          <div class="field">
+            <label class="field-label">Data de nascimento</label>
+            <input type="date" id="f-conjugeNasc">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Cônjuge trabalha?</label>
+          <div class="options">
+            <div class="option"><input type="radio" name="conjTrab" value="Sim" id="ct-s"><label for="ct-s">Sim</label></div>
+            <div class="option"><input type="radio" name="conjTrab" value="Não" id="ct-n"><label for="ct-n">Não</label></div>
+          </div>
+          <input type="text" id="f-conjugeEmpresa" placeholder="Empresa onde trabalha" style="margin-top: 8px; display:none">
+        </div>
+      </div>
+
+      <div class="section-heading">Dependentes</div>
+      <p style="font-size: 13px; color: var(--gray-500); margin-top: -6px;">Filhos, enteados ou outros dependentes para IRRF, salário-família ou plano de saúde.</p>
+
+      <div id="dependentes-container"></div>
+      <button type="button" class="btn-add-dep" id="btn-add-dep">+ Adicionar dependente</button>
+    </section>
+
+    <!-- ===== STEP 6: ESCOLARIDADE + COMPLEMENTARES ===== -->
+    <section class="step" data-step="6">
+      <h2 class="step-title">Escolaridade e complementares</h2>
+
+      <div class="section-heading">Escolaridade</div>
+      <div class="field">
+        <label class="field-label">Grau de instrução <span class="required">*</span></label>
+        <select id="f-instrucao" required>
+          <option value="">Selecione…</option>
+          <option>Analfabeto</option>
+          <option>Fundamental incompleto</option>
+          <option>Fundamental completo</option>
+          <option>Médio incompleto</option>
+          <option>Médio completo</option>
+          <option>Superior incompleto</option>
+          <option>Superior completo</option>
+          <option>Pós-graduação</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Curso / formação</label>
+          <input type="text" id="f-curso">
+        </div>
+        <div class="field">
+          <label class="field-label">Instituição de ensino</label>
+          <input type="text" id="f-instituicao">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Ano de conclusão</label>
+          <input type="number" id="f-anoConclusao" min="1950" max="2030">
+        </div>
+        <div class="field">
+          <label class="field-label">Idiomas</label>
+          <input type="text" id="f-idiomas" placeholder="Ex: Inglês básico">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Cursos / certificações</label>
+        <textarea id="f-cursos" placeholder="Liste seus cursos, se houver"></textarea>
+      </div>
+
+      <div class="section-heading">Vale-transporte</div>
+      <div class="field">
+        <label class="field-label">Você opta pelo vale-transporte? <span class="required">*</span></label>
+        <div class="options">
+          <div class="option"><input type="radio" name="vt" value="Sim" id="vt-s"><label for="vt-s">Sim</label></div>
+          <div class="option"><input type="radio" name="vt" value="Não" id="vt-n"><label for="vt-n">Não</label></div>
+        </div>
+      </div>
+
+      <div class="section-heading">Contato em caso de emergência</div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Nome <span class="required">*</span></label>
+          <input type="text" id="f-emerNome" required>
+        </div>
+        <div class="field">
+          <label class="field-label">Parentesco <span class="required">*</span></label>
+          <input type="text" id="f-emerParentesco" required>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Telefone <span class="required">*</span></label>
+          <input type="tel" id="f-emerTelefone" required>
+        </div>
+        <div class="field">
+          <label class="field-label">Telefone alternativo</label>
+          <input type="tel" id="f-emerTelefone2">
+        </div>
+      </div>
+
+      <div class="section-heading">Informações de saúde</div>
+      <div class="field">
+        <label class="field-label">Possui alergia a medicamento ou substância?</label>
+        <div class="options">
+          <div class="option"><input type="radio" name="alergia" value="Não" id="al-n" checked><label for="al-n">Não</label></div>
+          <div class="option"><input type="radio" name="alergia" value="Sim" id="al-s"><label for="al-s">Sim</label></div>
+        </div>
+        <input type="text" id="f-alergiaQual" placeholder="Qual?" style="margin-top: 8px; display:none">
+      </div>
+      <div class="field">
+        <label class="field-label">Faz uso contínuo de medicamento?</label>
+        <div class="options">
+          <div class="option"><input type="radio" name="medcont" value="Não" id="mc-n" checked><label for="mc-n">Não</label></div>
+          <div class="option"><input type="radio" name="medcont" value="Sim" id="mc-s"><label for="mc-s">Sim</label></div>
+        </div>
+        <input type="text" id="f-medContQual" placeholder="Qual?" style="margin-top: 8px; display:none">
+      </div>
+      <div class="field">
+        <label class="field-label">Possui restrição médica para alguma atividade?</label>
+        <div class="options">
+          <div class="option"><input type="radio" name="restr" value="Não" id="re-n" checked><label for="re-n">Não</label></div>
+          <div class="option"><input type="radio" name="restr" value="Sim" id="re-s"><label for="re-s">Sim</label></div>
+        </div>
+        <input type="text" id="f-restrQual" placeholder="Qual?" style="margin-top: 8px; display:none">
+      </div>
+      <div class="field">
+        <label class="field-label">Já sofreu acidente de trabalho?</label>
+        <div class="options">
+          <div class="option"><input type="radio" name="acidente" value="Não" id="ac-n" checked><label for="ac-n">Não</label></div>
+          <div class="option"><input type="radio" name="acidente" value="Sim" id="ac-s"><label for="ac-s">Sim</label></div>
+        </div>
+        <input type="text" id="f-acidenteQual" placeholder="Descreva o que aconteceu" style="margin-top: 8px; display:none">
+      </div>
+    </section>
+
+    <!-- ===== STEP 7: DECLARAÇÃO DE ETNIA ===== -->
+    <section class="step" data-step="7">
+      <h2 class="step-title">Declaração de Etnia</h2>
+      <p class="step-subtitle">Autodeclaração étnico-racial exigida pela Lei nº 14.553/2023.</p>
+
+      <div class="decl-box">
+        <strong>Lei nº 14.553/2023</strong>
+        Em atendimento à lei que determina a inclusão de informações étnico-raciais em registros de trabalhadores e no e-Social, você deve se autodeclarar em uma das opções abaixo.
+      </div>
+
+      <div class="field">
+        <label class="field-label">Eu me autodeclaro: <span class="required">*</span></label>
+        <div class="etnia-grid">
+          <div class="etnia-opt"><input type="radio" name="etnia" value="Branco(a)" id="et-1"><label for="et-1">1. Branco(a)</label></div>
+          <div class="etnia-opt"><input type="radio" name="etnia" value="Preto(a)" id="et-2"><label for="et-2">2. Preto(a)</label></div>
+          <div class="etnia-opt"><input type="radio" name="etnia" value="Pardo(a)" id="et-3"><label for="et-3">3. Pardo(a)</label></div>
+          <div class="etnia-opt"><input type="radio" name="etnia" value="Amarelo(a)" id="et-4"><label for="et-4">4. Amarelo(a)</label></div>
+          <div class="etnia-opt" style="grid-column: span 2"><input type="radio" name="etnia" value="Indígena" id="et-5"><label for="et-5">5. Indígena</label></div>
+        </div>
+      </div>
+
+      <div class="decl-box" style="margin-top: 20px;">
+        <strong>⚠ Falsidade ideológica</strong>
+        Declaro estar ciente de que, em caso de falsidade ideológica, conforme o <strong>artigo 299 do Código Penal Brasileiro</strong>, ficarei sujeito(a) às sanções legais aplicáveis.
+      </div>
+
+      <div class="field">
+        <label class="field-label">Assinatura digital <span class="required">*</span></label>
+        <div class="sig-wrapper">
+          <canvas class="sig-canvas" id="sig-etnia" width="600" height="180"></canvas>
+        </div>
+        <div class="sig-actions">
+          <span>Assine com o dedo (ou mouse) no espaço acima</span>
+          <button type="button" class="sig-clear" data-target="sig-etnia">Limpar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== STEP 8: DECLARAÇÕES + ASSINATURA FINAL + REVISÃO ===== -->
+    <section class="step" data-step="8">
+      <h2 class="step-title">Declarações finais e envio</h2>
+
+      <div class="section-heading">Declarações do funcionário</div>
+      <ul class="check-list">
+        <li>
+          <input type="checkbox" id="d-1" required>
+          <label for="d-1">Declaro que todas as informações prestadas nesta ficha são verdadeiras e me responsabilizo, civil e criminalmente, pela veracidade dos dados informados.</label>
+        </li>
+        <li>
+          <input type="checkbox" id="d-2" required>
+          <label for="d-2">Comprometo-me a comunicar formalmente ao RH qualquer alteração de endereço, estado civil, dependentes ou demais dados cadastrais.</label>
+        </li>
+        <li>
+          <input type="checkbox" id="d-3" required>
+          <label for="d-3">Autorizo a empresa a tratar meus dados pessoais para as finalidades de contratação, gestão do contrato de trabalho e cumprimento de obrigações legais, nos termos da Lei nº 13.709/2018 (LGPD).</label>
+        </li>
+        <li>
+          <input type="checkbox" id="d-4" required>
+          <label for="d-4">Declaro estar ciente de que o descumprimento de normas internas, do contrato de trabalho ou das normas de segurança do trabalho pode ensejar sanções disciplinares previstas em lei.</label>
+        </li>
+      </ul>
+
+      <div class="section-heading" style="margin-top: 24px;">Assinatura do funcionário</div>
+      <div class="field">
+        <div class="sig-wrapper">
+          <canvas class="sig-canvas" id="sig-final" width="600" height="180"></canvas>
+        </div>
+        <div class="sig-actions">
+          <span>Assine com o dedo (ou mouse) no espaço acima</span>
+          <button type="button" class="sig-clear" data-target="sig-final">Limpar</button>
+        </div>
+      </div>
+
+      <div class="section-heading" style="margin-top: 24px;">Confira antes de enviar</div>
+      <div id="review-container"></div>
+
+      <div style="margin-top: 24px; padding: 16px; background: #FFF8E1; border-left: 4px solid var(--warn); border-radius: 0 6px 6px 0;">
+        <strong style="color: var(--warn);">Atenção:</strong> após enviar, você não conseguirá mais editar. Confira tudo antes de tocar em "Enviar ficha".
+      </div>
+    </section>
+
+    <!-- ===== STEP 9: SUCCESS ===== -->
+    <section class="step" data-step="9">
+      <div class="center-screen">
+        <div class="icon" style="color: var(--success)">✓</div>
+        <h2>Ficha enviada!</h2>
+        <p>Sua ficha foi recebida pelo RH. Em breve entraremos em contato para a próxima etapa da admissão.</p>
+        <p style="font-size: 13px; color: var(--gray-500);">Você pode fechar essa página agora.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer" id="footer-nav">
+    <div class="inner">
+      <button class="btn btn-secondary" id="btn-back">Voltar</button>
+      <button class="btn btn-primary" id="btn-next">Próximo</button>
+    </div>
+  </footer>
+</div>
+
+<div class="saving-indicator" id="saving-indicator">Salvando…</div>
+
+<!-- Firebase (modular v10) -->
+<script type="module">
+  // ═══════════════════════════════════════════════════════════════════
+  //  CONFIGURAÇÃO — Ana Paula, substitua pelos dados do SEU projeto Firebase
+  // ═══════════════════════════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyB2fpZIidz41B3vrDoZy3K79vs31Uhw4C4",
+    authDomain: "admissao-agas-eugas.firebaseapp.com",
+    projectId: "admissao-agas-eugas",
+    storageBucket: "admissao-agas-eugas.firebasestorage.app",
+    messagingSenderId: "407216149561",
+    appId: "1:407216149561:web:71454d4744c22a76dc69e8"
+  };
+
+  const USE_FIREBASE = !!firebaseConfig.projectId; // fallback para localStorage se não configurar
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  DADOS DAS EMPRESAS (não mexer)
+  // ═══════════════════════════════════════════════════════════════════
+  const EMPRESAS = {
+    agas: {
+      nome: "AGÁS GASES LTDA",
+      cnpj: "04.680.175/0001-48",
+      endereco: "Av. São João, 3462 — Centro",
+      cep: "35680-065",
+      cidadeUF: "Itaúna/MG"
+    },
+    eugas: {
+      nome: "EUGAS COMÉRCIO DE GASES EIRELI",
+      cnpj: "38.300.933/0001-77",
+      endereco: "Av. São João, 4613 — Lourdes",
+      cep: "35680-237",
+      cidadeUF: "Itaúna/MG"
+    },
+    outra: {
+      nome: "Ficha de Admissão",
+      cnpj: "",
+      endereco: "",
+      cep: "",
+      cidadeUF: ""
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  Firebase setup (dinâmico — só carrega se configurado)
+  // ═══════════════════════════════════════════════════════════════════
+  let db = null, doc = null, getDoc = null, setDoc = null, updateDoc = null, serverTimestamp = null;
+  if (USE_FIREBASE) {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js");
+    const fs = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js");
+    const app = initializeApp(firebaseConfig);
+    db = fs.getFirestore(app);
+    doc = fs.doc; getDoc = fs.getDoc; setDoc = fs.setDoc; updateDoc = fs.updateDoc; serverTimestamp = fs.serverTimestamp;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  ESTADO
+  // ═══════════════════════════════════════════════════════════════════
+  const params = new URLSearchParams(location.search);
+  let fichaId = params.get('id');
+  let empresaKey = (params.get('empresa') || 'agas').toLowerCase();
+  const TOTAL_STEPS = 8; // 8 passos + 1 tela de sucesso
+  let currentStep = 1;
+  let submitted = false;
+
+  // Se não veio ID, gera um local (funciona offline)
+  if (!fichaId) {
+    fichaId = 'local_' + Math.random().toString(36).slice(2, 12);
+    const url = new URL(location.href);
+    url.searchParams.set('id', fichaId);
+    history.replaceState(null, '', url.toString());
+  }
+
+  const LS_KEY = 'ficha_' + fichaId;
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  CARREGAMENTO
+  // ═══════════════════════════════════════════════════════════════════
+  async function loadFicha() {
+    // Se está no Firebase, tenta pegar de lá primeiro (tem prioridade sobre localStorage)
+    if (USE_FIREBASE) {
+      try {
+        const snap = await getDoc(doc(db, 'fichas', fichaId));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.empresa) empresaKey = data.empresa;
+          if (data.statusFicha === 'enviada') {
+            submitted = true;
+            currentStep = 9;
+          }
+          if (data.dados) fillFormFromData(data.dados);
+          if (data.assinaturas?.etnia) restoreSignature('sig-etnia', data.assinaturas.etnia);
+          if (data.assinaturas?.final) restoreSignature('sig-final', data.assinaturas.final);
+        }
+      } catch (e) {
+        console.warn('Firestore load falhou, usando localStorage', e);
+      }
+    }
+    // localStorage fallback / rascunho local
+    const local = localStorage.getItem(LS_KEY);
+    if (local && !submitted) {
+      try {
+        const parsed = JSON.parse(local);
+        if (parsed.empresa) empresaKey = parsed.empresa;
+        if (parsed.dados) fillFormFromData(parsed.dados);
+        if (parsed.assinaturas?.etnia) restoreSignature('sig-etnia', parsed.assinaturas.etnia);
+        if (parsed.assinaturas?.final) restoreSignature('sig-final', parsed.assinaturas.final);
+      } catch(e) { console.warn('LocalStorage load falhou', e); }
+    }
+    if (!EMPRESAS[empresaKey]) empresaKey = 'agas';
+    document.getElementById('empresa-name').textContent = EMPRESAS[empresaKey].nome;
+    document.getElementById('empresa-name-body').textContent = EMPRESAS[empresaKey].nome;
+  }
+
+  function fillFormFromData(dados) {
+    for (const [k, v] of Object.entries(dados)) {
+      if (v == null) continue;
+      const el = document.getElementById('f-' + k);
+      if (el) { el.value = v; continue; }
+      // radios
+      const radio = document.querySelector(`input[name="${k}"][value="${v}"]`);
+      if (radio) radio.checked = true;
+      // checkboxes (declarações)
+      if (k.startsWith('d-') && typeof v === 'boolean') {
+        const cb = document.getElementById(k);
+        if (cb) cb.checked = v;
+      }
+    }
+    if (dados.dependentes && Array.isArray(dados.dependentes)) {
+      dados.dependentes.forEach(d => addDependente(d));
+    }
+    // Trigger conditional field visibility
+    document.querySelectorAll('input[type=radio]:checked').forEach(el => el.dispatchEvent(new Event('change')));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  COLETA DE DADOS
+  // ═══════════════════════════════════════════════════════════════════
+  function collectFormData() {
+    const dados = {};
+    // Inputs / selects / textareas
+    document.querySelectorAll('[id^="f-"]').forEach(el => {
+      const key = el.id.slice(2); // remove "f-"
+      dados[key] = el.value;
+    });
+    // Radios
+    document.querySelectorAll('input[type=radio]:checked').forEach(el => {
+      dados[el.name] = el.value;
+    });
+    // Declarações (checkboxes)
+    document.querySelectorAll('.check-list input[type=checkbox]').forEach(cb => {
+      dados[cb.id] = cb.checked;
+    });
+    // Dependentes
+    dados.dependentes = collectDependentes();
+    return dados;
+  }
+
+  function collectDependentes() {
+    const list = [];
+    document.querySelectorAll('.dep-card').forEach((card, idx) => {
+      list.push({
+        nome: card.querySelector('[data-f=nome]').value,
+        parentesco: card.querySelector('[data-f=parentesco]').value,
+        nascimento: card.querySelector('[data-f=nascimento]').value,
+        cpf: card.querySelector('[data-f=cpf]').value,
+        irrf: card.querySelector('[data-f=irrf]').checked,
+        salFam: card.querySelector('[data-f=salFam]').checked,
+        saude: card.querySelector('[data-f=saude]').checked
+      });
+    });
+    return list;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  SALVAMENTO
+  // ═══════════════════════════════════════════════════════════════════
+  let saveTimer = null;
+  function scheduleSave() {
+    if (submitted) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(save, 800);
+  }
+
+  async function save(final = false) {
+    const dados = collectFormData();
+    const payload = {
+      empresa: empresaKey,
+      dados,
+      assinaturas: {
+        etnia: signatures['sig-etnia']?.toDataURL() || null,
+        final: signatures['sig-final']?.toDataURL() || null,
+      },
+      statusFicha: final ? 'enviada' : 'rascunho',
+      atualizadoEm: new Date().toISOString()
+    };
+    if (final) payload.enviadoEm = new Date().toISOString();
+
+    // LocalStorage sempre (safety net)
+    try { localStorage.setItem(LS_KEY, JSON.stringify(payload)); } catch(e){}
+
+    // Firestore (se configurado)
+    if (USE_FIREBASE) {
+      try {
+        const fsPayload = { ...payload };
+        if (final) fsPayload.enviadoEm = serverTimestamp();
+        fsPayload.atualizadoEm = serverTimestamp();
+        await setDoc(doc(db, 'fichas', fichaId), fsPayload, { merge: true });
+      } catch(e) {
+        console.error('Erro ao salvar no Firestore:', e);
+        if (final) throw e; // no submit final, reporta
+      }
+    }
+    showSaving();
+  }
+
+  function showSaving() {
+    const el = document.getElementById('saving-indicator');
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('show'), 1200);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  ASSINATURA DIGITAL (canvas)
+  // ═══════════════════════════════════════════════════════════════════
+  const signatures = {};
+  function initSignatureCanvas(id) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    // Resolução alta pro sinal ficar nítido
+    const setSize = () => {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0) return;
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(ratio, ratio);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    };
+    setSize();
+    window.addEventListener('resize', () => {
+      // Preserva a imagem
+      const tmp = canvas.toDataURL();
+      setSize();
+      restoreSignature(id, tmp);
+    });
+
+    let drawing = false;
+    let lastX = 0, lastY = 0;
+    let hasDrawn = false;
+
+    const getPos = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const point = e.touches ? e.touches[0] : e;
+      return { x: point.clientX - rect.left, y: point.clientY - rect.top };
+    };
+
+    const start = (e) => {
+      e.preventDefault();
+      drawing = true;
+      const p = getPos(e);
+      lastX = p.x; lastY = p.y;
+    };
+    const move = (e) => {
+      if (!drawing) return;
+      e.preventDefault();
+      const p = getPos(e);
+      const ctx = canvas.getContext('2d');
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      lastX = p.x; lastY = p.y;
+      hasDrawn = true;
+    };
+    const end = () => {
+      if (drawing && hasDrawn) scheduleSave();
+      drawing = false;
+    };
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', end);
+
+    signatures[id] = canvas;
+  }
+
+  function restoreSignature(id, dataURL) {
+    if (!dataURL) return;
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const img = new Image();
+    img.onload = () => {
+      const ctx = canvas.getContext('2d');
+      const ratio = window.devicePixelRatio || 1;
+      ctx.drawImage(img, 0, 0, canvas.width / ratio, canvas.height / ratio);
+    };
+    img.src = dataURL;
+  }
+
+  function isSignaturePresent(id) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return false;
+    const ctx = canvas.getContext('2d');
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // Verifica se há algum pixel não-transparente
+    for (let i = 3; i < img.data.length; i += 4) {
+      if (img.data[i] !== 0) return true;
+    }
+    return false;
+  }
+
+  document.querySelectorAll('.sig-clear').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const canvas = document.getElementById(btn.dataset.target);
+      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+      scheduleSave();
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  DEPENDENTES (add/remove)
+  // ═══════════════════════════════════════════════════════════════════
+  function addDependente(prefill = {}) {
+    const container = document.getElementById('dependentes-container');
+    const idx = container.children.length + 1;
+    const card = document.createElement('div');
+    card.className = 'dep-card';
+    card.innerHTML = `
+      <div class="dep-title">Dependente ${idx}</div>
+      <button type="button" class="dep-remove" aria-label="Remover">×</button>
+      <div class="field">
+        <label class="field-label">Nome completo</label>
+        <input type="text" data-f="nome" value="${prefill.nome || ''}">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Parentesco</label>
+          <input type="text" data-f="parentesco" placeholder="Ex: Filho(a)" value="${prefill.parentesco || ''}">
+        </div>
+        <div class="field">
+          <label class="field-label">Data de nascimento</label>
+          <input type="date" data-f="nascimento" value="${prefill.nascimento || ''}">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">CPF</label>
+        <input type="text" data-f="cpf" value="${prefill.cpf || ''}">
+      </div>
+      <div class="field">
+        <label class="field-label">Finalidade da dependência</label>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+          <label style="font-size:14px;font-weight:500"><input type="checkbox" data-f="irrf" ${prefill.irrf ? 'checked' : ''} style="margin-right:6px"> IRRF (Imposto de Renda)</label>
+          <label style="font-size:14px;font-weight:500"><input type="checkbox" data-f="salFam" ${prefill.salFam ? 'checked' : ''} style="margin-right:6px"> Salário-família</label>
+          <label style="font-size:14px;font-weight:500"><input type="checkbox" data-f="saude" ${prefill.saude ? 'checked' : ''} style="margin-right:6px"> Plano de saúde</label>
+        </div>
+      </div>
+    `;
+    card.querySelector('.dep-remove').addEventListener('click', () => {
+      card.remove();
+      renumberDependentes();
+      scheduleSave();
+    });
+    card.querySelectorAll('input').forEach(el => el.addEventListener('input', scheduleSave));
+    container.appendChild(card);
+  }
+  function renumberDependentes() {
+    document.querySelectorAll('.dep-card .dep-title').forEach((el, i) => el.textContent = 'Dependente ' + (i + 1));
+  }
+  document.getElementById('btn-add-dep').addEventListener('click', () => addDependente());
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  CONDICIONAIS (mostrar/esconder campos dependentes de radio)
+  // ═══════════════════════════════════════════════════════════════════
+  function conditional(radioName, showValues, targetId, alsoDep = null) {
+    document.querySelectorAll(`input[name="${radioName}"]`).forEach(r => {
+      r.addEventListener('change', () => {
+        const el = document.getElementById(targetId);
+        if (el) el.style.display = showValues.includes(r.value) && r.checked ? '' : 'none';
+        if (alsoDep) alsoDep(r.value);
+      });
+    });
+  }
+  conditional('pcd', ['Sim'], 'f-pcdQual');
+  conditional('whats', ['Outro'], 'f-whatsOutro');
+  conditional('mopp', ['Sim'], 'f-moppValidade');
+  conditional('alergia', ['Sim'], 'f-alergiaQual');
+  conditional('medcont', ['Sim'], 'f-medContQual');
+  conditional('restr', ['Sim'], 'f-restrQual');
+  conditional('acidente', ['Sim'], 'f-acidenteQual');
+  conditional('conjTrab', ['Sim'], 'f-conjugeEmpresa');
+  conditional('estCivil', ['Casado(a)', 'União estável'], null, val => {
+    const show = ['Casado(a)', 'União estável'].includes(val);
+    document.getElementById('conjuge-section').style.display = show ? '' : 'none';
+    document.getElementById('conjuge-heading').style.display = show ? '' : 'none';
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  NAVEGAÇÃO DO WIZARD
+  // ═══════════════════════════════════════════════════════════════════
+  function showStep(n) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.querySelector(`.step[data-step="${n}"]`).classList.add('active');
+    currentStep = n;
+    const pct = ((n - 1) / TOTAL_STEPS) * 100;
+    document.getElementById('progress-fill').style.width = Math.min(pct, 100) + '%';
+    document.getElementById('step-count').textContent = n <= TOTAL_STEPS ? `Passo ${n} de ${TOTAL_STEPS}` : '';
+    const btnBack = document.getElementById('btn-back');
+    const btnNext = document.getElementById('btn-next');
+    const footer = document.getElementById('footer-nav');
+
+    if (n === 9) { footer.style.display = 'none'; return; }
+    footer.style.display = '';
+    btnBack.style.visibility = n === 1 ? 'hidden' : 'visible';
+    btnNext.textContent = n === 1 ? 'Começar' : (n === TOTAL_STEPS ? 'Enviar ficha' : 'Próximo');
+    btnNext.classList.toggle('btn-full', n === 1);
+    btnBack.classList.toggle('btn-full', false);
+    window.scrollTo(0, 0);
+
+    if (n === TOTAL_STEPS) buildReview();
+  }
+
+  function validateStep(n) {
+    const stepEl = document.querySelector(`.step[data-step="${n}"]`);
+    let firstInvalid = null;
+    stepEl.querySelectorAll('[required]').forEach(el => {
+      if (!el.value && el.type !== 'radio' && el.type !== 'checkbox') {
+        el.classList.add('error');
+        if (!firstInvalid) firstInvalid = el;
+      } else {
+        el.classList.remove('error');
+      }
+    });
+    // Radios required (buscar name de radios com required no primeiro elem)
+    stepEl.querySelectorAll('input[type=radio][required]').forEach(r => {
+      if (!document.querySelector(`input[name="${r.name}"]:checked`) && !firstInvalid) firstInvalid = r;
+    });
+    // Nome fields marked with * (validação manual pra dados essenciais)
+    const criticalFields = {
+      2: ['f-nomeCompleto', 'f-dataNascimento', 'f-naturalidade', 'f-nacionalidade'],
+      3: ['f-nomeMae', 'f-endereco', 'f-bairro', 'f-cep', 'f-cidade', 'f-uf', 'f-celular', 'f-email'],
+      4: ['f-cpf', 'f-rg', 'f-pis'],
+      6: ['f-instrucao', 'f-emerNome', 'f-emerParentesco', 'f-emerTelefone'],
+    };
+    (criticalFields[n] || []).forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.value) {
+        el.classList.add('error');
+        if (!firstInvalid) firstInvalid = el;
+      }
+    });
+    const criticalRadios = {
+      2: ['sexo', 'raca', 'estCivil'],
+      6: ['vt'],
+      7: ['etnia'],
+    };
+    (criticalRadios[n] || []).forEach(name => {
+      if (!document.querySelector(`input[name="${name}"]:checked`) && !firstInvalid) {
+        firstInvalid = document.querySelector(`input[name="${name}"]`);
+      }
+    });
+    // Step 7 & 8: signature required
+    if (n === 7 && !isSignaturePresent('sig-etnia')) {
+      alert('Por favor, assine a Declaração de Etnia.');
+      return false;
+    }
+    if (n === 8) {
+      const decls = ['d-1', 'd-2', 'd-3', 'd-4'].every(id => document.getElementById(id).checked);
+      if (!decls) { alert('Marque todas as declarações.'); return false; }
+      if (!isSignaturePresent('sig-final')) { alert('Por favor, assine no espaço da assinatura final.'); return false; }
+    }
+    if (firstInvalid) {
+      firstInvalid.focus();
+      firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      alert('Preencha os campos obrigatórios (marcados com *).');
+      return false;
+    }
+    return true;
+  }
+
+  document.getElementById('btn-next').addEventListener('click', async () => {
+    if (currentStep === TOTAL_STEPS) {
+      // Submit final
+      if (!validateStep(currentStep)) return;
+      const btn = document.getElementById('btn-next');
+      btn.disabled = true; btn.textContent = 'Enviando…';
+      try {
+        await save(true);
+        submitted = true;
+        showStep(9);
+      } catch(e) {
+        alert('Erro ao enviar. Tente novamente ou verifique sua conexão.');
+        btn.disabled = false; btn.textContent = 'Enviar ficha';
+      }
+      return;
+    }
+    if (!validateStep(currentStep)) return;
+    showStep(currentStep + 1);
+  });
+  document.getElementById('btn-back').addEventListener('click', () => {
+    if (currentStep > 1) showStep(currentStep - 1);
+  });
+
+  // Autosave em qualquer input
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('change', scheduleSave);
+    if (el.type === 'text' || el.type === 'email' || el.type === 'tel' || el.tagName === 'TEXTAREA') {
+      el.addEventListener('input', scheduleSave);
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  REVIEW SCREEN
+  // ═══════════════════════════════════════════════════════════════════
+  function buildReview() {
+    const c = document.getElementById('review-container');
+    const g = (id) => document.getElementById(id)?.value || '';
+    const r = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
+    const emp = EMPRESAS[empresaKey];
+
+    const sections = [
+      { title: 'Empresa', rows: [
+        ['Razão social', emp.nome],
+        ['CNPJ', emp.cnpj],
+      ]},
+      { title: 'Pessoais', rows: [
+        ['Nome', g('f-nomeCompleto')],
+        ['Nascimento', g('f-dataNascimento')],
+        ['CPF', g('f-cpf')],
+        ['Estado civil', r('estCivil')],
+        ['Raça/Cor', r('raca')],
+      ]},
+      { title: 'Endereço', rows: [
+        ['Endereço', g('f-endereco')],
+        ['Bairro', g('f-bairro')],
+        ['CEP', g('f-cep')],
+        ['Cidade/UF', `${g('f-cidade')}/${g('f-uf')}`],
+      ]},
+      { title: 'Contato', rows: [
+        ['Celular', g('f-celular')],
+        ['E-mail', g('f-email')],
+      ]},
+      { title: 'Declaração de Etnia', rows: [
+        ['Autodeclaração', r('etnia')],
+        ['Assinada', isSignaturePresent('sig-etnia') ? '✓ Sim' : '✗ Falta assinar'],
+      ]},
+      { title: 'Dependentes', rows: [
+        ['Total', String(document.querySelectorAll('.dep-card').length)],
+      ]},
+    ];
+
+    c.innerHTML = sections.map(s => `
+      <div class="review-section">
+        <h3>${s.title}</h3>
+        ${s.rows.map(([k, v]) => `
+          <div class="row"><span class="k">${k}</span><span class="v ${v ? '' : 'empty-v'}">${v || '(não preenchido)'}</span></div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  INIT
+  // ═══════════════════════════════════════════════════════════════════
+  async function init() {
+    initSignatureCanvas('sig-etnia');
+    initSignatureCanvas('sig-final');
+    await loadFicha();
+    if (submitted) {
+      currentStep = 9;
+      showStep(9);
+    } else {
+      showStep(1);
+    }
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('app').style.display = '';
+  }
+  init();
+</script>
+
+</body>
+</html>
